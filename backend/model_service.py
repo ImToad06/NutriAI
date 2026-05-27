@@ -1,6 +1,7 @@
 import os
 import joblib
 import numpy as np
+import pandas as pd
 
 MODEL_PATH = os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
@@ -20,10 +21,16 @@ def _load_modelo_data():
 
 def get_model():
     data = _load_modelo_data()
-    # El .pkl puede ser directamente el modelo (versión antigua) o un diccionario (versión nueva)
     if isinstance(data, dict):
         return data["modelo"]
     return data
+
+
+def get_model_columns():
+    data = _load_modelo_data()
+    if isinstance(data, dict) and "columnas_modelo" in data:
+        return data["columnas_modelo"]
+    return None
 
 
 ALERT_MAP = {
@@ -231,7 +238,11 @@ def predict(data: dict) -> dict:
             "plan_seguimiento": alert_info["plan_seguimiento"],
         }
 
-    features = np.array([[edad_meses, peso_kg, estatura_cm, muac_cm, imc]])
+    cols = get_model_columns()
+    if cols is not None:
+        features = pd.DataFrame([[edad_meses, peso_kg, estatura_cm, muac_cm, imc]], columns=cols)
+    else:
+        features = np.array([[edad_meses, peso_kg, estatura_cm, muac_cm, imc]])
 
     prediction = model.predict(features)[0]
     result = int(prediction)
