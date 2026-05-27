@@ -1,77 +1,222 @@
+# ============================================================
+# NutriIA / NutriPAE IA
+# Modelo de clasificación nutricional con Random Forest
+# Fuente de datos: malnutrition_data.csv
+# ============================================================
+
+import pandas as pd
 import numpy as np
-from sklearn.ensemble import RandomForestClassifier
-import joblib
 import os
+import joblib
+from sklearn.preprocessing import LabelEncoder
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
 
-# Establecer semilla para reproducibilidad
-np.random.seed(42)
+import warnings
+warnings.filterwarnings("ignore")
 
-n_samples = 5000
+# ============================================================
+# 1. Cargar dataset
+# ============================================================
 
-# Generar dataset simulado de 5000 registros basado en ENSIN-ICBF
-edad_meses = np.random.uniform(12.0, 216.0, n_samples)
-estatura_cm = 65.0 + 0.5 * edad_meses + np.random.normal(0, 5, n_samples)
-estatura_cm = np.clip(estatura_cm, 50.0, 190.0)
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+RUTA_CSV = os.path.join(SCRIPT_DIR, "..", "malnutrition_data.csv")
 
-estado_nutricional_codificado = np.zeros(n_samples, dtype=int)
-imc = np.zeros(n_samples)
-muac_cm = np.zeros(n_samples)
+df = pd.read_csv(RUTA_CSV)
 
-for i in range(n_samples):
-    em = edad_meses[i]
-    # Clases: 0 = Riesgo Moderado, 1 = Estado Normal, 2 = Riesgo Severo
-    classification = np.random.choice([0, 1, 2], p=[0.25, 0.60, 0.15])
-    estado_nutricional_codificado[i] = classification
-    
-    if classification == 1:  # Estado Normal
-        imc[i] = np.random.uniform(15.0, 20.0) + (em / 216.0) * 4.0
-        muac_cm[i] = 13.0 + (em / 216.0) * 8.0 + np.random.uniform(0.0, 2.0)
-    elif classification == 0:  # Riesgo Moderado
-        # Simulación de delgadez moderada o sobrepeso moderado
-        if np.random.rand() < 0.5:
-            imc[i] = np.random.uniform(12.5, 14.5) + (em / 216.0) * 3.0
-        else:
-            imc[i] = np.random.uniform(21.0, 24.0) + (em / 216.0) * 5.0
-        muac_cm[i] = 11.5 + (em / 216.0) * 6.0 + np.random.uniform(0.0, 1.5)
-    else:  # Riesgo Severo
-        # Simulación de delgadez severa u obesidad severa
-        if np.random.rand() < 0.5:
-            imc[i] = np.random.uniform(9.0, 12.0) + (em / 216.0) * 2.0
-        else:
-            imc[i] = np.random.uniform(25.0, 32.0) + (em / 216.0) * 7.0
-        muac_cm[i] = 9.5 + (em / 216.0) * 4.0 + np.random.uniform(0.0, 1.0)
+print("Primeros registros del dataset:")
+print(df.head())
 
-# Calcular el peso en kg en base al IMC y la estatura simulados
-peso_kg = imc * (estatura_cm / 100.0) ** 2
+print("\nTamaño inicial del dataset:")
+print(df.shape)
 
-# X: edad_meses, peso_kg, estatura_cm, muac_cm, imc
-X = np.column_stack([edad_meses, peso_kg, estatura_cm, muac_cm, imc])
-y = estado_nutricional_codificado
+print("\nColumnas originales:")
+print(df.columns.tolist())
 
-# Clasificador RandomForestClassifier
-clf = RandomForestClassifier(n_estimators=100, random_state=42)
-clf.fit(X, y)
+# ============================================================
+# 2. Renombrar columnas al formato esperado
+# ============================================================
 
-# Crear directorio si no existe y guardar el modelo
-os.makedirs(os.path.dirname(os.path.abspath(__file__)), exist_ok=True)
-model_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "modelo_rf_nutriia.pkl")
-joblib.dump(clf, model_path)
+df = df.rename(columns={
+    "age_months": "edad_meses",
+    "weight_kg": "peso_kg",
+    "height_cm": "estatura_cm",
+    "muac_cm": "muac_cm",
+    "bmi": "imc",
+    "nutrition_status": "estado_nutricional"
+})
 
-print(f"Modelo entrenado y guardado en: {model_path}")
-print(f"Clases: {clf.classes_}")
-print(f"Accuracy en training: {clf.score(X, y):.4f}")
+# ============================================================
+# 3. Validación de columnas
+# ============================================================
 
-# Casos de prueba
-test_cases = [
-    ("Verde (Estado Normal)", {"edad_meses": 120.0, "peso_kg": 35.0, "estatura_cm": 140.0, "muac_cm": 18.0}),
-    ("Naranja (Riesgo Moderado)", {"edad_meses": 96.0, "peso_kg": 18.0, "estatura_cm": 120.0, "muac_cm": 12.5}),
-    ("Rojo (Riesgo Severo)", {"edad_meses": 144.0, "peso_kg": 16.0, "estatura_cm": 135.0, "muac_cm": 9.0}),
+columnas_esperadas = [
+    "edad_meses",
+    "peso_kg",
+    "estatura_cm",
+    "muac_cm",
+    "imc",
+    "estado_nutricional"
 ]
 
-print("\nValidación con casos de prueba:")
-for name, tc in test_cases:
-    imc_val = tc["peso_kg"] / (tc["estatura_cm"] / 100.0)**2
-    features = np.array([[tc["edad_meses"], tc["peso_kg"], tc["estatura_cm"], tc["muac_cm"], imc_val]])
-    pred = clf.predict(features)[0]
-    labels = {0: "Riesgo Moderado (Naranja)", 1: "Estado Normal (Verde)", 2: "Riesgo Severo (Rojo)"}
-    print(f"  {name}: IMC={imc_val:.2f} -> Predicción: {labels[pred]}")
+for columna in columnas_esperadas:
+    if columna not in df.columns:
+        raise ValueError(f"Falta la columna obligatoria: {columna}")
+
+# ============================================================
+# 4. Limpieza de datos
+# ============================================================
+
+columnas_numericas = [
+    "edad_meses",
+    "peso_kg",
+    "estatura_cm",
+    "muac_cm",
+    "imc"
+]
+
+for columna in columnas_numericas:
+    df[columna] = pd.to_numeric(df[columna], errors="coerce")
+
+df["estado_nutricional"] = df["estado_nutricional"].astype(str).str.strip().str.lower()
+
+print("\nValores nulos antes de limpieza:")
+print(df.isnull().sum())
+
+for columna in columnas_numericas:
+    df[columna] = df[columna].fillna(df[columna].median())
+
+df["estado_nutricional"] = df["estado_nutricional"].replace("nan", np.nan)
+df["estado_nutricional"] = df["estado_nutricional"].fillna(df["estado_nutricional"].mode()[0])
+
+duplicados = df.duplicated().sum()
+print(f"\nRegistros duplicados encontrados: {duplicados}")
+df = df.drop_duplicates()
+
+# Recalcular IMC por seguridad
+df["imc"] = df["peso_kg"] / ((df["estatura_cm"] / 100) ** 2)
+
+# Eliminar registros físicamente imposibles
+df = df[
+    (df["edad_meses"] > 0) &
+    (df["peso_kg"] > 0) &
+    (df["estatura_cm"] > 0) &
+    (df["muac_cm"] > 0) &
+    (df["imc"] > 0)
+]
+
+print("\nValores nulos después de limpieza:")
+print(df.isnull().sum())
+
+print("\nTamaño final del dataset después de limpieza:")
+print(df.shape)
+
+print("\nDistribución de la variable objetivo:")
+print(df["estado_nutricional"].value_counts())
+
+# ============================================================
+# 5. Codificación y separación
+# ============================================================
+
+encoder_estado = LabelEncoder()
+df["estado_nutricional_codificado"] = encoder_estado.fit_transform(df["estado_nutricional"])
+
+equivalencias = pd.DataFrame({
+    "estado_nutricional": encoder_estado.classes_,
+    "codigo": encoder_estado.transform(encoder_estado.classes_)
+})
+print("\nEquivalencias de codificación:")
+print(equivalencias)
+
+X = df[["edad_meses", "peso_kg", "estatura_cm", "muac_cm", "imc"]]
+y = df["estado_nutricional_codificado"]
+
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=42, stratify=y
+)
+
+print("\nTamaño X_train:", X_train.shape)
+print("Tamaño X_test:", X_test.shape)
+print("Tamaño y_train:", y_train.shape)
+print("Tamaño y_test:", y_test.shape)
+
+# ============================================================
+# 6. Entrenamiento del modelo
+# ============================================================
+
+RF = RandomForestClassifier(n_estimators=200, random_state=42, class_weight="balanced")
+RF.fit(X_train, y_train)
+
+Y_PredRF = RF.predict(X_test)
+accuracy_RF = accuracy_score(y_test, Y_PredRF)
+
+print("\n============================================================")
+print("Resultados del modelo Random Forest")
+print("============================================================")
+print(f"Precisión en entrenamiento: {RF.score(X_train, y_train):.4f}")
+print(f"Accuracy en prueba: {accuracy_RF:.4f}")
+
+print("\nReporte de clasificación:")
+print(classification_report(
+    y_test, Y_PredRF, target_names=encoder_estado.classes_
+))
+
+print("\nMatriz de confusión:")
+cm_RF = confusion_matrix(y_test, Y_PredRF)
+print(cm_RF)
+
+importancias = pd.DataFrame({
+    "Variable": X.columns,
+    "Importancia": RF.feature_importances_
+}).sort_values(by="Importancia", ascending=False)
+
+print("\nImportancia de variables:")
+print(importancias)
+
+# ============================================================
+# 7. Guardar modelo y codificador
+# ============================================================
+
+modelo_nutriia = {
+    "modelo": RF,
+    "encoder_estado": encoder_estado,
+    "columnas_modelo": list(X.columns)
+}
+
+RUTA_MODELO = os.path.join(SCRIPT_DIR, "modelo_rf_nutriia.pkl")
+joblib.dump(modelo_nutriia, RUTA_MODELO)
+
+print(f"\nModelo guardado correctamente en: {RUTA_MODELO}")
+
+# ============================================================
+# 8. Validación con casos de prueba
+# ============================================================
+
+def predecir(edad_anios, peso_kg, estatura_cm, muac_cm):
+    edad_meses = edad_anios * 12.0
+    imc = peso_kg / ((estatura_cm / 100.0) ** 2)
+    features = pd.DataFrame({
+        "edad_meses": [edad_meses],
+        "peso_kg": [peso_kg],
+        "estatura_cm": [estatura_cm],
+        "muac_cm": [muac_cm],
+        "imc": [imc]
+    })
+    pred_num = RF.predict(features)[0]
+    pred_label = encoder_estado.inverse_transform([pred_num])[0]
+    return pred_num, pred_label, imc
+
+print("\n============================================================")
+print("Validación con casos de prueba")
+print("============================================================")
+
+casos = [
+    ("Estado Normal (Verde)", 10, 35.0, 140.0, 18.0),
+    ("Riesgo Moderado (Naranja)", 8, 18.0, 120.0, 12.5),
+    ("Riesgo Severo (Rojo) - Caso extremo", 8, 8.0, 120.0, 12.0),
+]
+
+for nombre, edad, peso, estatura, muac in casos:
+    num, label, imc = predecir(edad, peso, estatura, muac)
+    print(f"  {nombre}: IMC={imc:.2f} -> Predicción: {label} (código {num})")

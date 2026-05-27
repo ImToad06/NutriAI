@@ -8,14 +8,22 @@ MODEL_PATH = os.path.join(
     "modelo_rf_nutriia.pkl",
 )
 
-_model = None
+_modelo_data = None
+
+
+def _load_modelo_data():
+    global _modelo_data
+    if _modelo_data is None:
+        _modelo_data = joblib.load(MODEL_PATH)
+    return _modelo_data
 
 
 def get_model():
-    global _model
-    if _model is None:
-        _model = joblib.load(MODEL_PATH)
-    return _model
+    data = _load_modelo_data()
+    # El .pkl puede ser directamente el modelo (versión antigua) o un diccionario (versión nueva)
+    if isinstance(data, dict):
+        return data["modelo"]
+    return data
 
 
 ALERT_MAP = {
@@ -161,6 +169,40 @@ ALERT_MAP = {
 }
 
 
+def regla_seguridad_nutricional(edad_meses, peso_kg, estatura_cm, muac_cm):
+    """
+    Reglas de seguridad para evitar predicciones ilógicas del modelo en casos extremos.
+    Devuelve el código de ALERT_MAP (0=moderado, 1=saludable, 2=severo) o None.
+    """
+    imc = peso_kg / ((estatura_cm / 100.0) ** 2)
+
+    # Casos físicamente imposibles o de riesgo extremo
+    if edad_meses >= 60 and peso_kg < 12:
+        return 2, "Peso extremadamente bajo para la edad escolar."
+
+    if imc < 12:
+        return 2, "IMC extremadamente bajo."
+
+    if muac_cm < 11.5:
+        return 2, "MUAC extremadamente bajo."
+
+    # Riesgo moderado por bajo IMC o MUAC bajo
+    if 12 <= imc < 14:
+        return 0, "IMC bajo con posible riesgo nutricional."
+
+    if 11.5 <= muac_cm < 12.5:
+        return 0, "MUAC bajo con posible riesgo nutricional."
+
+    # Riesgo por exceso de peso
+    if imc >= 30:
+        return 2, "IMC extremadamente alto."
+
+    if 25 <= imc < 30:
+        return 0, "IMC elevado con posible riesgo nutricional."
+
+    return None, None
+
+
 def predict(data: dict) -> dict:
     model = get_model()
 
@@ -172,6 +214,22 @@ def predict(data: dict) -> dict:
     if estatura_cm < 50.0 or estatura_cm > 250.0:
         raise ValueError(f"Estatura fuera del rango fisiológico: {estatura_cm} cm")
     imc = peso_kg / ((estatura_cm / 100.0) ** 2)
+
+    # Aplicar reglas de seguridad antes del modelo
+    codigo_seguridad, motivo_seguridad = regla_seguridad_nutricional(
+        edad_meses, peso_kg, estatura_cm, muac_cm
+    )
+
+    if codigo_seguridad is not None:
+        alert_info = ALERT_MAP.get(codigo_seguridad, ALERT_MAP[1])
+        return {
+            "prediccion": alert_info["prediccion"],
+            "alerta": alert_info["alerta"],
+            "imc": round(float(imc), 2),
+            "descripcion": f"{alert_info['descripcion']} ({motivo_seguridad})",
+            "accion": alert_info["accion"],
+            "plan_seguimiento": alert_info["plan_seguimiento"],
+        }
 
     features = np.array([[edad_meses, peso_kg, estatura_cm, muac_cm, imc]])
 
