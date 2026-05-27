@@ -27,9 +27,9 @@ Utilizando un modelo de Árbol de Decisión entrenado con datos demográficos y 
 * **RF-02 Motor de Reglas (IMC):** El backend debe calcular el IMC ($Peso / Estatura^2$) automáticamente como variable derivada (feature engineering) si el modelo lo requiere, o validarlo.
 * **RF-03 Inferencia IA en Tiempo Real:** Exponer un endpoint que cargue un modelo `.pkl` (DecisionTreeClassifier) y retorne la predicción al instante.
 * **RF-04 Sistema de Alertas (Output Clínico):**
-  * 🔴 **Alerta Roja:** Riesgo de Desnutrición $\rightarrow$ Acción: Reasignación de minuta + notificación a entidad de salud.
-  * 🟢 **Estado Óptimo (Verde):** Saludable $\rightarrow$ Acción: Minuta estándar.
-  * 🟠 **Alerta Naranja:** Riesgo de Sobrepeso $\rightarrow$ Acción: Ajuste de carbohidratos + fomento de actividad física.
+  * 🔴 **Alerta Roja:** Riesgo de Desnutrición → Acción: Reasignación de minuta + notificación a entidad de salud.
+  * 🟢 **Estado Óptimo (Verde):** Saludable → Acción: Minuta estándar.
+  * 🟠 **Alerta Naranja:** Riesgo de Sobrepeso → Acción: Ajuste de carbohidratos + fomento de actividad física.
 * **RF-05 Interfaz de Evaluación (UI):** Plataforma web interactiva para simular perfiles y ver resultados de forma gráfica y amigable.
 * **RF-06 Consentimiento y Ética:** Incluir una advertencia (disclaimer) o checkbox de supervisión clínica indicando que la IA es un sistema de apoyo a la decisión clínica (CDSS) y requiere validación humana, cumpliendo la ley de protección de datos (Ley 1581 de 2012 en Colombia).
 
@@ -46,9 +46,9 @@ Se plantea una **Arquitectura Cliente-Servidor Desacoplada** basada en Microserv
 * **Persistencia:** En memoria / Stateless (El prototipo no guarda histórico de pacientes en esta fase, cada petición es independiente).
 
 ## 5. Decisiones Arquitectónicas (ADRs)
-1. **Uso de FastAPI vs. Flask/Django:** 
+1. **Uso de FastAPI vs. Flask/Django:**
    * *Decisión:* Elegimos FastAPI por su soporte nativo asíncrono, validación automática de datos (Pydantic), auto-generación de documentación (Swagger/OpenAPI) y altísimo rendimiento.
-2. **Frontend en Vanilla JS vs. Framework (React/Angular):** 
+2. **Frontend en Vanilla JS vs. Framework (React/Angular):**
    * *Decisión:* Para un sprint de prototipado donde solo hay un formulario y una visualización de respuesta, React añade una sobrecarga de configuración innecesaria. Vanilla JS asegura un desarrollo "Zero-Config" y ultrarrápido.
 3. **Persistencia Stateless:**
    * *Decisión:* Al ser una fase de validación de 3 escenarios clínicos definidos en un artículo de investigación, la complejidad de mantener un motor de Base de Datos relacional retrasaría el sprint. Todo el procesamiento será en memoria (Stateless).
@@ -60,56 +60,108 @@ Se plantea una **Arquitectura Cliente-Servidor Desacoplada** basada en Microserv
 ## 7. Análisis de Riesgos y Posibles Problemas
 1. **Problemas de Serialización (Backend):**
    * *Riesgo:* Incompatibilidad de versiones de `scikit-learn` entre el entorno donde se entrenó el `.pkl` y el entorno de ejecución de FastAPI.
-   * *Mitigación:* Fijar versiones exactas en un `requirements.txt`.
+   * *Mitigación:* Fijar versiones en `requirements.txt` (en producción se usarán versiones exactas; durante desarrollo se usan versiones compatibles con Python 3.14).
 2. **Manejo de Tipos de Datos NumPy en JSON:**
    * *Riesgo:* FastAPI (Pydantic) a veces falla al parsear tipos de datos nativos de NumPy devueltos por la predicción (ej. `int64`).
-   * *Mitigación:* Asegurarse de castear el resultado del modelo a tipos estándar de Python (`int()`, `float()`) antes de devolver el JSON.
+   * *Mitigación:* Se castea explícitamente el resultado del modelo a tipos estándar de Python (`int()`, `float()`) en `model_service.py` antes de devolver el JSON.
 3. **Políticas de CORS (Cross-Origin Resource Sharing):**
    * *Riesgo:* El frontend (ej. abierto localmente como `file://` o en otro puerto) será bloqueado por el navegador al consultar la API de FastAPI.
-   * *Mitigación:* Configurar `CORSMiddleware` explícitamente en la aplicación FastAPI permitiendo `*` durante el desarrollo local.
+   * *Mitigación:* Se configuró `CORSMiddleware` en `main.py` permitiendo `*` durante el desarrollo local.
 4. **Validación Ética:**
    * *Riesgo:* Que la aplicación se perciba como un reemplazo médico.
-   * *Mitigación:* Implementar de forma obligatoria los disclaimers del requerimiento RF-06 en el diseño del Front-end.
+   * *Mitigación:* Implementado el checkbox obligatorio de disclaimer en el frontend (RF-06). El formulario permanece deshabilitado hasta que el usuario acepte el aviso ético y legal.
 
-## 8. Plan de Desarrollo Paso a Paso (Roadmap del Sprint)
+---
 
-### Fase 1: Configuración Base y Serialización del Modelo (Día 1)
-1. Inicializar repositorio Git y estructurar carpetas (`/backend`, `/frontend`, `/model`).
-2. Recibir o asegurar la existencia del modelo ya entrenado `modelo_arbol_nutriia.pkl` (generado vía `joblib`).
-3. Crear el entorno virtual de Python y el archivo `requirements.txt` (FastAPI, uvicorn, scikit-learn, pydantic, joblib).
+## 8. Estado Actual del Desarrollo
 
-### Fase 2: Construcción del Backend y API (Días 1-2)
-1. Crear el esquema de Pydantic (`PatientData`) para validar los campos de entrada requeridos (RF-01).
-2. Desarrollar la lógica principal en `main.py` de FastAPI.
-3. Implementar el endpoint POST `/predecir`:
-   * Recibe el JSON.
-   * Calcula IMC si es necesario (RF-02).
-   * Prepara el array 2D para la predicción de la IA.
-   * Ejecuta `model.predict()`.
-   * Mapea el output (0, 1, 2) al string descriptivo y al color de alerta (RF-04).
-4. Configurar Middleware de CORS para desarrollo.
-5. Probar endpoint localmente usando Swagger UI (`http://localhost:8000/docs`).
+### Fase 1: Configuración Base y Serialización del Modelo — COMPLETADA
+- [x] Repositorio Git inicializado y empujado a GitHub (`ImToad06/NutriAI`).
+- [x] Estructura de carpetas creada: `backend/`, `frontend/`, `model/`.
+- [x] Modelo `modelo_arbol_nutriia.pkl` generado mediante `train_model.py` con datos sintéticos basados en umbrales ENSIN (2000 muestras, DecisionTreeClassifier con max_depth=10, accuracy ~98%).
+- [x] Entorno virtual Python configurado con todas las dependencias instaladas.
+- [x] Archivo `requirements.txt` creado.
 
-### Fase 3: Construcción de la Interfaz Frontend (Día 2-3)
-1. Maquetar `index.html` con un diseño limpio y moderno. Incluir el disclaimer médico (RF-06).
-2. Aplicar estilos en `styles.css` enfocados en la semaforización y usabilidad.
-3. Escribir lógica en `app.js`:
-   * Capturar evento `submit` del formulario.
-   * Extraer valores y estructurar el objeto JSON.
-   * Realizar petición `fetch` al endpoint `/predecir`.
-   * Manipular el DOM para mostrar la alerta correspondiente en la interfaz.
+### Fase 2: Construcción del Backend y API — COMPLETADA
+- [x] Esquema Pydantic `PatientData` con validación de campos (RF-01).
+- [x] Esquema Pydantic `PredictionResponse` con campos de resultado estructurado.
+- [x] Endpoint `POST /predecir` implementado y funcional.
+- [x] Cálculo automático de IMC en el backend (RF-02).
+- [x] Mapeo de predicción numérica (0, 1, 2) a etiquetas descriptivas y colores de alerta (RF-04).
+- [x] Middleware de CORS configurado permitiendo `*`.
+- [x] Endpoint `GET /` con información de la API.
+- [x] Documentación Swagger UI accesible en `/docs`.
 
-### Fase 4: Integración, Pruebas y Simulación (Día 3)
-1. Levantar servidor Backend y Frontend simultáneamente.
-2. Ejecutar prueba de "Camino Feliz" (Happy Path).
-3. Simular los 3 escenarios clínicos requeridos por el artículo de investigación para la generación de evidencias:
-   * **Escenario A (Verde):** Paciente con IMC y variables normales.
-   * **Escenario B (Rojo):** Paciente con peso muy bajo, evidenciando alerta de Desnutrición.
-   * **Escenario C (Naranja):** Paciente con IMC alto, evidenciando alerta de Sobrepeso.
-4. Documentar capturas de pantalla de los 3 escenarios para el entregable.
+**Estructura del backend:**
+```
+backend/
+├── __init__.py
+├── main.py           # FastAPI app, endpoints, CORS
+├── model_service.py  # Carga del modelo, lógica de predicción, mapeo de alertas
+└── schemas.py        # Modelos Pydantic (PatientData, PredictionResponse)
+```
 
-## 9. Futuras Fases (Post-Sprint)
-* Conexión a Base de Datos PostgreSQL (mediante SQLAlchemy o SQLModel) para almacenar el historial de evaluaciones.
-* Sistema de Autenticación para diferentes roles (Profesor, Nutricionista, Administrador del PAE).
-* Dashboards de reportes poblacionales (PowerBI / Metabase integrado) para la secretaría de educación.
-* Despliegue dockerizado en AWS o Render.
+### Fase 3: Construcción de la Interfaz Frontend — COMPLETADA
+- [x] `index.html` con formulario responsivo y disclaimer ético obligatorio (RF-06).
+- [x] `styles.css` con diseño de semaforización visual (verde/rojo/naranja) y gradientes.
+- [x] `app.js` con lógica Fetch API al endpoint `/predecir`, bloqueo del formulario hasta aceptar disclaimer, y manipulación del DOM para resultados.
+- [x] Diseño responsivo (mobile-first) con media queries.
+
+**Estructura del frontend:**
+```
+frontend/
+├── index.html   # UI principal con form y disclaimer
+├── styles.css   # Estilos responsivos + semaforización
+└── app.js       # Lógica Fetch API + render de resultados
+```
+
+### Fase 4: Integración, Pruebas y Simulación — COMPLETADA
+- [x] Backend y Frontend integrados y probados end-to-end.
+- [x] 3 escenarios clínicos validados contra la API:
+  - **Escenario A (Verde - Saludable):** edad=10, género=M, actividad=Media, peso=35kg, estatura=1.40m → IMC=17.86 → *Saludable*
+  - **Escenario B (Rojo - Desnutrición):** edad=8, género=F, actividad=Baja, condición médica=Sí, peso=18kg, estatura=1.20m → IMC=12.50 → *Desnutrición*
+  - **Escenario C (Naranja - Sobrepeso):** edad=12, género=M, actividad=Baja, peso=55kg, estatura=1.35m → IMC=30.18 → *Sobrepeso*
+- [x] README.md actualizado con instrucciones de instalación, ejecución y documentación de la API.
+
+---
+
+## 9. Pendientes y Mejoras Futuras (Post-Sprint)
+
+### Pendientes del Sprint Actual
+- [ ] **Prueba de carga/rendimiento:** Verificar formalmente RNF-01 (latencia < 2s) con múltiples peticiones concurrentes.
+- [ ] **Capturas de pantalla:** Documentar visualmente los 3 escenarios clínicos en el navegador para el entregable del artículo de investigación.
+- [ ] **Validación frontend:** Agregar mensajes de error más descriptivos en el formulario cuando los campos no sean válidos.
+- [ ] **Tests unitarios:** Agregar pytest para el backend (schemas, model_service, endpoint).
+
+### Futuras Fases (Post-Sprint)
+- [ ] Conexión a Base de Datos PostgreSQL (mediante SQLAlchemy o SQLModel) para almacenar el historial de evaluaciones.
+- [ ] Sistema de Autenticación para diferentes roles (Profesor, Nutricionista, Administrador del PAE).
+- [ ] Dashboards de reportes poblacionales (PowerBI / Metabase integrado) para la secretaría de educación.
+- [ ] Despliegue dockerizado en AWS o Render.
+- [ ] Entrenamiento del modelo con datos reales de la ENSIN/ICBF en lugar de datos sintéticos.
+- [ ] Reentrenamiento del modelo con datos recopilados en producción (MLOps pipeline).
+
+## 10. Cómo Ejecutar
+
+### Instalación
+```bash
+python3 -m venv .venv
+source .venv/bin/activate   # Linux/Mac
+pip install -r requirements.txt
+```
+
+### Backend (API)
+```bash
+source .venv/bin/activate
+uvicorn backend.main:app --reload --port 8000
+```
+Swagger UI disponible en: `http://localhost:8000/docs`
+
+### Reentrenar el Modelo
+```bash
+source .venv/bin/activate
+python model/train_model.py
+```
+
+### Frontend
+Abrir `frontend/index.html` en un navegador. El frontend envía peticiones a `http://localhost:8000/predecir`.
