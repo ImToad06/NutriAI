@@ -5,7 +5,7 @@ import numpy as np
 MODEL_PATH = os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
     "model",
-    "modelo_arbol_nutriia.pkl",
+    "modelo_rf_nutriia.pkl",
 )
 
 _model = None
@@ -18,24 +18,26 @@ def get_model():
     return _model
 
 
+# Diccionario de alertas alineado al protocolo PAE:
+# 0 (Naranja, Riesgo Moderado), 1 (Verde, Saludable), 2 (Rojo/Roja, Riesgo Severo)
 ALERT_MAP = {
     0: {
-        "prediccion": "Desnutrición",
-        "alerta": "Roja",
-        "descripcion": "Riesgo de desnutrición detectado",
-        "accion": "Reasignación de minuta + notificación a entidad de salud",
+        "prediccion": "Riesgo Moderado",
+        "alerta": "Naranja",
+        "descripcion": "Riesgo moderado de alteración nutricional detectado",
+        "accion": "Seguimiento prioritario y ajuste de ración alimentaria (PAE)",
     },
     1: {
         "prediccion": "Saludable",
         "alerta": "Verde",
-        "descripcion": "Estado nutricional óptimo",
-        "accion": "Minuta estándar",
+        "descripcion": "Estado nutricional óptimo y saludable",
+        "accion": "Continuar con la minuta alimentaria estándar del PAE",
     },
     2: {
-        "prediccion": "Sobrepeso",
-        "alerta": "Naranja",
-        "descripcion": "Riesgo de sobrepeso detectado",
-        "accion": "Ajuste de carbohidratos + fomento de actividad física",
+        "prediccion": "Riesgo Severo",
+        "alerta": "Roja",
+        "descripcion": "Riesgo severo de alteración nutricional detectado",
+        "accion": "Intervención inmediata y remisión prioritaria a servicios de salud",
     },
 }
 
@@ -43,23 +45,17 @@ ALERT_MAP = {
 def predict(data: dict) -> dict:
     model = get_model()
 
-    peso = float(data["peso"])
-    estatura = float(data["estatura"])
-    imc = peso / (estatura**2)
+    edad_meses = float(data["edad_meses"])
+    peso_kg = float(data["peso_kg"])
+    estatura_cm = float(data["estatura_cm"])
+    muac_cm = float(data["muac_cm"])
 
-    features = np.array(
-        [
-            [
-                data["edad"],
-                data["genero"],
-                data["actividad_fisica"],
-                data["condicion_medica"],
-                peso,
-                estatura,
-                imc,
-            ]
-        ]
-    )
+    # Calcular el IMC: peso_kg / (estatura_cm/100)^2
+    imc = peso_kg / ((estatura_cm / 100.0) ** 2)
+
+    # Construir el vector de entrada exactamente en este orden:
+    # [edad_meses, peso_kg, estatura_cm, muac_cm, imc]
+    features = np.array([[edad_meses, peso_kg, estatura_cm, muac_cm, imc]])
 
     prediction = model.predict(features)[0]
     result = int(prediction)

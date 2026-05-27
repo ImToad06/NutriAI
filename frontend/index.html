@@ -28,46 +28,23 @@
 
             <div class="form-grid">
                 <div class="form-group">
-                    <label for="edad">Edad (años)</label>
-                    <input type="number" id="edad" name="edad" min="1" max="18" required placeholder="Ej: 10">
+                    <label for="edad_meses">Edad (meses)</label>
+                    <input type="number" id="edad_meses" name="edad_meses" min="1" max="240" step="1" required placeholder="Ej: 120">
                 </div>
 
                 <div class="form-group">
-                    <label for="genero">Género</label>
-                    <select id="genero" name="genero" required>
-                        <option value="">Seleccione...</option>
-                        <option value="0">Femenino</option>
-                        <option value="1">Masculino</option>
-                    </select>
+                    <label for="peso_kg">Peso (kg)</label>
+                    <input type="number" id="peso_kg" name="peso_kg" min="1" max="150" step="0.1" required placeholder="Ej: 35.0">
                 </div>
 
                 <div class="form-group">
-                    <label for="actividad_fisica">Nivel de Actividad Física</label>
-                    <select id="actividad_fisica" name="actividad_fisica" required>
-                        <option value="">Seleccione...</option>
-                        <option value="0">Baja</option>
-                        <option value="1">Media</option>
-                        <option value="2">Alta</option>
-                    </select>
+                    <label for="estatura_cm">Estatura (cm)</label>
+                    <input type="number" id="estatura_cm" name="estatura_cm" min="50" max="250" step="0.1" required placeholder="Ej: 140.0">
                 </div>
 
                 <div class="form-group">
-                    <label for="condicion_medica">Condición Médica Preexistente</label>
-                    <select id="condicion_medica" name="condicion_medica" required>
-                        <option value="">Seleccione...</option>
-                        <option value="0">No</option>
-                        <option value="1">Sí</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label for="peso">Peso (kg)</label>
-                    <input type="number" id="peso" name="peso" min="1" max="150" step="0.1" required placeholder="Ej: 35.0">
-                </div>
-
-                <div class="form-group">
-                    <label for="estatura">Estatura (m)</label>
-                    <input type="number" id="estatura" name="estatura" min="0.5" max="2.5" step="0.01" required placeholder="Ej: 1.40">
+                    <label for="muac_cm">MUAC (Perímetro braquial en cm)</label>
+                    <input type="number" id="muac_cm" name="muac_cm" min="5" max="50" step="0.1" required placeholder="Ej: 18.0">
                 </div>
             </div>
 

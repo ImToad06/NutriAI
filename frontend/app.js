@@ -23,12 +23,10 @@ form.addEventListener("submit", async function (e) {
     }
 
     const data = {
-        edad: parseInt(document.getElementById("edad").value),
-        genero: parseInt(document.getElementById("genero").value),
-        actividad_fisica: parseInt(document.getElementById("actividad_fisica").value),
-        condicion_medica: parseInt(document.getElementById("condicion_medica").value),
-        peso: parseFloat(document.getElementById("peso").value),
-        estatura: parseFloat(document.getElementById("estatura").value),
+        edad_meses: parseFloat(document.getElementById("edad_meses").value),
+        peso_kg: parseFloat(document.getElementById("peso_kg").value),
+        estatura_cm: parseFloat(document.getElementById("estatura_cm").value),
+        muac_cm: parseFloat(document.getElementById("muac_cm").value),
     };
 
     btnSubmit.disabled = true;
@@ -67,7 +65,10 @@ function displayResult(result) {
     document.getElementById("result-descripcion").textContent = result.descripcion;
     document.getElementById("result-accion").textContent = result.accion;
 
-    const alertClass = result.alerta.toLowerCase();
+    let alertClass = result.alerta.toLowerCase();
+    if (alertClass === "rojo") {
+        alertClass = "roja";
+    }
     const icon = document.getElementById("result-icon");
     const alertBar = document.getElementById("result-alert-bar");
 
