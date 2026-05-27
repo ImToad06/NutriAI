@@ -18,9 +18,35 @@ class PatientData(BaseModel):
         }
 
 
+class SugerenciaAlimentacion(BaseModel):
+    descripcion: str = Field(..., description="Descripción general de la recomendación alimentaria")
+    alimentos_recomendados: list[str] = Field(..., description="Lista de alimentos recomendados")
+    alimentos_evitar: list[str] = Field(..., description="Lista de alimentos a evitar o limitar")
+    frecuencia: str = Field(..., description="Frecuencia o patrón de comidas sugerido")
+
+
+class SugerenciaSueno(BaseModel):
+    descripcion: str = Field(..., description="Descripción general de la recomendación de sueño")
+    horas_recomendadas: str = Field(..., description="Rango de horas de sueño recomendadas según la edad")
+    habitos: list[str] = Field(..., description="Hábitos de sueño recomendados")
+
+
+class SugerenciaEstiloVida(BaseModel):
+    descripcion: str = Field(..., description="Descripción general de la recomendación de estilo de vida")
+    actividad_fisica: str = Field(..., description="Recomendación de actividad física")
+    recomendaciones: list[str] = Field(..., description="Recomendaciones adicionales de estilo de vida")
+
+
+class PlanSeguimiento(BaseModel):
+    alimentacion: SugerenciaAlimentacion = Field(..., description="Sugerencias alimenticias personalizadas")
+    sueno: SugerenciaSueno = Field(..., description="Sugerencias de higiene del sueño")
+    estilo_vida: SugerenciaEstiloVida = Field(..., description="Sugerencias de estilo de vida general")
+
+
 class PredictionResponse(BaseModel):
     prediccion: str = Field(..., description="Resultado de la predicción")
     alerta: str = Field(..., description="Color de alerta")
     imc: float = Field(..., description="IMC calculado")
     descripcion: str = Field(..., description="Descripción del resultado")
     accion: str = Field(..., description="Acción recomendada")
+    plan_seguimiento: PlanSeguimiento = Field(..., description="Plan de seguimiento personalizado según el resultado")

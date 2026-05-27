@@ -415,6 +415,211 @@ body {
     display: none !important;
 }
 
+.follow-up-card {
+    background: #fff;
+    border: 1px solid var(--gray-200);
+    border-radius: var(--radius-lg);
+    padding: 1.75rem;
+    margin-top: 1.25rem;
+    box-shadow: var(--shadow-md);
+}
+
+.follow-up-card.slide-up {
+    animation: slideUp 0.35s ease;
+}
+
+.follow-up-title {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--gray-900);
+    margin-bottom: 1.25rem;
+}
+
+.follow-up-section {
+    background: var(--gray-50);
+    border: 1px solid var(--gray-100);
+    border-radius: var(--radius);
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+
+.follow-up-section:last-child {
+    margin-bottom: 0;
+}
+
+.section-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.6rem;
+}
+
+.section-icon {
+    font-size: 1.2rem;
+}
+
+.section-label {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--gray-800);
+}
+
+.alimentacion-header {
+    border-bottom: 2px solid var(--green-border);
+    padding-bottom: 0.4rem;
+}
+
+.sueno-header {
+    border-bottom: 2px solid #c4b5fd;
+    padding-bottom: 0.4rem;
+}
+
+.estilo-vida-header {
+    border-bottom: 2px solid #93c5fd;
+    padding-bottom: 0.4rem;
+}
+
+.section-description {
+    font-size: 0.85rem;
+    color: var(--gray-600);
+    line-height: 1.5;
+    margin-bottom: 0.75rem;
+}
+
+.recommendation-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+}
+
+.recommendation-col {
+    background: #fff;
+    border-radius: 8px;
+    padding: 0.65rem;
+    border: 1px solid var(--gray-200);
+}
+
+.recommendation-col.recommend {
+    border-left: 3px solid var(--green);
+}
+
+.recommendation-col.avoid {
+    border-left: 3px solid var(--orange);
+}
+
+.col-label {
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    display: block;
+    margin-bottom: 0.4rem;
+}
+
+.recommend-label {
+    color: var(--green);
+}
+
+.avoid-label {
+    color: var(--orange);
+}
+
+.col-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.col-list li {
+    font-size: 0.78rem;
+    color: var(--gray-700);
+    line-height: 1.45;
+    padding: 0.15rem 0;
+    padding-left: 0.85rem;
+    position: relative;
+}
+
+.col-list li::before {
+    content: '·';
+    position: absolute;
+    left: 0;
+    font-weight: 700;
+    color: var(--gray-400);
+}
+
+.frequency-badge,
+.sleep-hours-badge,
+.activity-badge {
+    background: var(--gray-100);
+    border-radius: 8px;
+    padding: 0.55rem 0.75rem;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    font-size: 0.82rem;
+    color: var(--gray-700);
+    line-height: 1.45;
+    margin-bottom: 0.5rem;
+}
+
+.frequency-icon,
+.sleep-icon,
+.activity-icon {
+    font-size: 1rem;
+    flex-shrink: 0;
+}
+
+.habit-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.habit-list li {
+    font-size: 0.82rem;
+    color: var(--gray-700);
+    line-height: 1.45;
+    padding: 0.3rem 0;
+    padding-left: 1rem;
+    position: relative;
+}
+
+.habit-list li::before {
+    content: '✓';
+    position: absolute;
+    left: 0;
+    color: var(--green);
+    font-weight: 600;
+    font-size: 0.75rem;
+}
+
+.new-eval-container {
+    margin-top: 1rem;
+    text-align: center;
+}
+
+.btn-new-eval {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.7rem 1.75rem;
+    background: #fff;
+    color: var(--gray-800);
+    border: 1.5px solid var(--gray-300);
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+}
+
+.btn-new-eval:hover {
+    background: var(--gray-50);
+    border-color: var(--gray-400);
+}
+
 .footer {
     text-align: center;
     padding: 2rem 1rem 1.5rem;
@@ -435,6 +640,10 @@ body {
 
 @media (max-width: 500px) {
     .form-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .recommendation-grid {
         grid-template-columns: 1fr;
     }
 

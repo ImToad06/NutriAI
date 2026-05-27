@@ -32,6 +32,11 @@ Utilizando un modelo de **Random Forest** entrenado con datos biométricos funda
   * 🟠 **Alerta Naranja (Riesgo Moderado):** Riesgo moderado de alteración nutricional → Acción: Seguimiento prioritario y ajuste de ración alimentaria (PAE).
 * **RF-05 Interfaz de Evaluación (UI):** Plataforma web interactiva con diseño limpio y moderno para simular perfiles y ver resultados de forma gráfica y amigable.
 * **RF-06 Consentimiento y Ética:** Incluir un disclaimer con checkbox de supervisión clínica indicando que la IA es un sistema de apoyo a la decisión clínica (CDSS) y requiere validación humana, cumpliendo la Ley 1581 de 2012 (Protección de Datos Personales, Colombia).
+* **RF-07 Plan de Seguimiento Personalizado:** A partir del resultado de la predicción, el sistema genera un plan de seguimiento integral que incluye:
+  - **Sugerencias Alimenticias:** Alimentos recomendados, alimentos a evitar/limitar, y frecuencia de comidas, ajustados al nivel de riesgo detectado.
+  - **Sugerencias de Sueño:** Horas recomendadas según la edad y hábitos de higiene del sueño específicos para el perfil de riesgo.
+  - **Sugerencias de Estilo de Vida:** Recomendaciones de actividad física y acciones clave (controles clínicos, desparasitación, remisiones) diferenciadas por nivel de riesgo.
+  - Los planes son específicos para cada categoría: Saludable (Verde — mantenimiento), Riesgo Moderado (Naranja — intervención preventiva), Riesgo Severo (Roja — intervención urgente con remisión clínica).
 
 ### 3.2 Requerimientos No Funcionales (RNF)
 * **RNF-01 Rendimiento:** Latencia $< 2$ segundos en la respuesta de inferencia de la API.
@@ -51,12 +56,12 @@ nutriai/
 ├── backend/
 │   ├── __init__.py
 │   ├── main.py           # FastAPI app, endpoints, CORS
-│   ├── model_service.py   # Carga del modelo, conversión edad, lógica de predicción, mapeo de alertas
-│   └── schemas.py        # Modelos Pydantic (PatientData, PredictionResponse)
+│   ├── model_service.py   # Carga del modelo, conversión edad, predicción, ALERT_MAP con planes de seguimiento
+│   └── schemas.py        # Modelos Pydantic (PatientData, PredictionResponse, PlanSeguimiento, Sugerencia*)
 ├── frontend/
-│   ├── index.html         # UI moderna con form, disclaimer, tooltip MUAC
-│   ├── styles.css         # Diseño limpio sin gradientes, badges, semaforización
-│   └── app.js             # Lógica Fetch API + render de resultados
+│   ├── index.html         # UI con form, disclaimer, resultados, plan de seguimiento, nueva evaluación
+│   ├── styles.css         # Diseño limpio sin gradientes, badges, semaforización, cards de seguimiento
+│   └── app.js             # Fetch API, render de resultados y plan de seguimiento dinámico
 ├── model/
 │   ├── __init__.py
 │   ├── train_model.py             # Script de entrenamiento (RandomForest, 5000 muestras)
@@ -165,6 +170,17 @@ frontend/
   - **Escenario Naranja (Riesgo Moderado):** edad=8 años, peso=22.0 kg, estatura=120.0 cm, MUAC=14.0 cm → IMC=15.28 → *Riesgo Moderado (Naranja)*
 - [x] README.md actualizado con instrucciones de instalación, ejecución y documentación de la API.
 
+### Fase 5: Plan de Seguimiento Personalizado — COMPLETADA
+- [x] Esquemas Pydantic nuevos: `SugerenciaAlimentacion`, `SugerenciaSueno`, `SugerenciaEstiloVida`, `PlanSeguimiento`.
+- [x] `PredictionResponse` extendido con campo `plan_seguimiento` que retorna sugerencias diferenciadas por nivel de riesgo.
+- [x] `ALERT_MAP` enriquecido con planes de seguimiento clínico para cada categoría (Verde, Naranja, Roja):
+  - **Verde (Saludable):** Mantenimiento de minuta PAE, 5 tiempos de comida, hábitos de sueño regulares, actividad física 60 min/día, controles trimestrales.
+  - **Naranja (Riesgo Moderado):** Incremento calórico-proteico, 5 comidas diarias con refrigerios PAE, supervisión de sueño, seguimiento mensual de peso/MUAC, desparasitación cada 6 meses.
+  - **Roja (Riesgo Severo):** Intervención nutricional urgente con suplementación, 6 comidas de porciones pequeñas, sueño extendido (rango superior por edad), remisión inmediata a pediatra/nutricionista, exámenes de laboratorio, visita domiciliaria.
+- [x] Frontend actualizado con sección visual de Plan de Seguimiento (alimentación, sueño, estilo de vida) con cards diferenciados por categoría de alerta.
+- [x] Botón "Nueva Evaluación" agregado para reiniciar el formulario.
+- [x] Validación de estatura fisiológica añadida en `model_service.py` (rechaza estatura < 50 cm o > 250 cm).
+
 ---
 
 ## 9. Historial de Refactorizaciones
@@ -184,17 +200,55 @@ frontend/
 - Resultados con badges coloreados suaves e íconos Unicode.
 - Botón submit estilo negro sólido con estado de carga.
 
+### Refactor 3: Plan de Seguimiento Personalizado
+- Esquemas Pydantic nuevos: `SugerenciaAlimentacion`, `SugerenciaSueno`, `SugerenciaEstiloVida`, `PlanSeguimiento`.
+- Campo `plan_seguimiento` agregado a `PredictionResponse` con sugerencias diferenciadas por nivel de riesgo (Verde, Naranja, Roja).
+- Cada plan incluye: descripción general, alimentos recomendados/evitar con frecuencia, horas de sueño y hábitos, actividad física y recomendaciones de estilo de vida.
+- Los planes para Riesgo Severo incluyen: remisión inmediata a servicios de salud, exámenes de laboratorio, visita domiciliaria y 6 comidas diarias.
+- Frontend actualizado con sección visual de Plan de Seguimiento renderizada dinámicamente según la categoría de alerta.
+- Botón "Nueva Evaluación" agregado para flujo de trabajo completo.
+- Validación de estatura fisiológica añadida al backend (rango 50-250 cm).
+
 ---
 
-## 10. Pendientes y Mejoras Futuras (Post-Sprint)
+## 10. Análisis de Arquitectura — Issues y Fixes
 
-### Pendientes del Sprint Actual
-- [ ] **Prueba de carga/rendimiento:** Verificar formalmente RNF-01 (latencia < 2s) con múltiples peticiones concurrentes.
-- [ ] **Capturas de pantalla:** Documentar visualmente los 3 escenarios clínicos en el navegador para el entregable del artículo de investigación.
-- [ ] **Validación frontend:** Agregar mensajes de error más descriptivos en el formulario cuando los campos no sean válidos.
-- [ ] **Tests unitarios:** Agregar pytest para el backend (schemas, model_service, endpoint).
+### BUGS (Prioridad Alta)
+- [ ] **BUG-01: README desactualizado** — El README muestra el contrato de API viejo (`edad`, `genero`, `actividad_fisica`, `condicion_medica`, `peso`, `estatura` en metros) en lugar del actual (`edad_anios`, `peso_kg`, `estatura_cm`, `muac_cm`). También muestra respuestas incompletas y el nombre del modelo antiguo (`modelo_arbol_nutriia.pkl`). Debe actualizarse completamente.
+- [ ] **BUG-02: Validación de estatura insuficiente** — Pydantic permite `estatura_cm=0.01` (pasa `gt=0.0`) lo que causa división por ~cero en el cálculo de IMC. Agregar validación de rangos fisiológicos (estatura 50-250 cm) en el schema y en el servicio.
+- [ ] **BUG-03: Desajuste de bounds HTML vs Backend** — Los `min`/`max` del HTML no coinciden con los `ge`/`le` de Pydantic (ej: HTML `estatura_cm min=50 max=200`, Pydantic `gt=0.0 le=250.0`). Unificar bounds.
 
-### Futuras Fases (Post-Sprint)
+### BUGS (Prioridad Media)
+- [ ] **BUG-04: `parseInt` trunca edades decimales** — `parseInt(10.5)` → `10` de forma silenciosa. Agregar `step="1"` explícito y feedback al usuario, o redondear con `Math.round()`.
+- [ ] **BUG-05: Código muerto en app.js** — El mapeo `if (alertClass === "rojo") { alertClass = "roja"; }` es dead code porque el backend ya retorna `"Roja"`. Eliminar.
+- [ ] **BUG-06: Respuestas del README no coinciden** — Los textos de `descripcion` y `accion` en el README no coinciden con los reales del backend.
+
+### ISSUES DE ARQUITECTURA
+- [ ] **ARCH-01: Carga perezosa del modelo sin manejo de errores** — Si el `.pkl` falta o está corrupto, el primer request explota con un 500 genérico. Migrar a carga eager con lifespan event de FastAPI y fail-fast.
+- [ ] **ARCH-02: URL de API hardcodeada** — `app.js` tiene `http://localhost:8000/predecir` harcoded. Hacer configurable o usar ruta relativa si el frontend se sirve desde FastAPI.
+- [ ] **ARCH-03: CORS `allow_origins=["*"]` con `allow_credentials=True`** — Combinación inválida según la especificación CORS. Los navegadores rechazan esta configuración. Para desarrollo local usar `allow_origins=["*"]` sin credentials; para producción, whitelist explícita.
+- [ ] **ARCH-04: Sin versionamiento en requirements.txt** — Todas las dependencias están sin pinning (`fastapi`, `scikit-learn`, etc.). Pinning es crítico porque el `.pkl` es sensible a la versión de scikit-learn.
+- [ ] **ARCH-05: `pandas` en requirements.txt sin usar** — `pandas` está listado pero nunca se importa. Eliminar.
+- [ ] **ARCH-06: Sin endpoint `/health`** — No hay probe de salud/readiness. Agregar `GET /health` que verifique que el modelo está cargado.
+- [ ] **ARCH-07: Detalle de excepción filtrado al cliente** — `HTTPException(status_code=500, detail=str(e))` expone mensajes internos. Retornar mensaje genérico y loguear el error real.
+- [ ] **ARCH-08: Archivo `modelo_arbol_nutriia.pkl` obsoleto** — Archivo de 12KB del modelo DecisionTree viejo. Nunca se elimino. Eliminar.
+- [ ] **ARCH-09: Archivos binarios `.pkl` en Git** — Los `.pkl` están trackeados. Agregar `*.pkl` a `.gitignore` y usar Git LFS o regeneración vía `train_model.py`.
+- [ ] **ARCH-10: Frontend no servido desde FastAPI** — Requiere CORS y servidor separado. Montar directorio `frontend/` como static files en FastAPI para deployment simplificado.
+
+### MEJORAS DE UX
+- [ ] **UX-01: Validación frontend en español** — Los mensajes de error HTML5 nativos están en el idioma del navegador. Implementar `setCustomValidity()` en español.
+- [ ] **UX-02: Resultados visibles tras desmarcar disclaimer** — Si el usuario desmarca el checkbox, el formulario se deshabilita pero los resultados siguen visibles. Ocultar resultados al desmarcar.
+- [ ] **UX-03: Sin favicon** — Agregar un favicon para eliminar el 404 en consola.
+- [ ] **UX-04: Probabilidad/confianza del modelo** — Agregar `model.predict_proba()` al response para mostrar el nivel de confianza de la predicción (ej: "87% de confianza").
+
+### MEJORAS DE CALIDAD DE CÓDIGO
+- [ ] **CQ-01: Pydantic V1 Config syntax** — `class Config: json_schema_extra = {...}` es sintaxis V1. Migrar a `model_config = ConfigDict(json_schema_extra={...})`.
+- [ ] **CQ-02: Tipo de retorno `dict` en `predict()`** — `predict(data: dict) -> dict` no impone el contrato `PredictionResponse`. Refactorizar para retornar un objeto tipado.
+- [ ] **CQ-03: Modelo entrenado y evaluado sobre los mismos datos** — No hay train/test split en `train_model.py`. El accuracy de ~100% es probablemente overfitting. Agregar split y cross-validation.
+- [ ] **CQ-04: Datos sintéticos con asignación aleatoria de clase** — Las etiquetas se asignan con `np.random.choice()` independientes de los features biológicos. El modelo puede no generalizar a datos reales. Documentar esta limitación explícitamente.
+- [ ] **CQ-05: Sin infraestructura de logging** — No hay `import logging` ni configuración. En un CDSS clínico, la trazabilidad es esencial. Agregar logging de requests y predicciones.
+
+### FUTURO (Post-Sprint)
 - [ ] Conexión a Base de Datos PostgreSQL (mediante SQLAlchemy o SQLModel) para almacenar el historial de evaluaciones.
 - [ ] Sistema de Autenticación para diferentes roles (Profesor, Nutricionista, Administrador del PAE).
 - [ ] Dashboards de reportes poblacionales (PowerBI / Metabase integrado) para la secretaría de educación.
@@ -244,6 +298,24 @@ Abrir `frontend/index.html` en un navegador. El frontend envía peticiones a `ht
   "alerta": "Verde",
   "imc": 17.86,
   "descripcion": "Estado nutricional óptimo y saludable",
-  "accion": "Continuar con la minuta alimentaria estándar del PAE"
+  "accion": "Continuar con la minuta alimentaria estándar del PAE",
+  "plan_seguimiento": {
+    "alimentacion": {
+      "descripcion": "Mantener la minuta alimentaria equilibrada del PAE como base de la nutrición",
+      "alimentos_recomendados": ["Frutas y verduras variadas (mínimo 5 porciones al día)", "..."],
+      "alimentos_evitar": ["Exceso de bebidas azucaradas", "..."],
+      "frecuencia": "5 tiempos de comida diarios distribuidos en desayuno, refrigerio, almuerzo, refrigerio y cena según minuta PAE"
+    },
+    "sueno": {
+      "descripcion": "Mantener hábitos de sueño saludables para seguir apoyando el crecimiento",
+      "horas_recomendadas": "9-11 horas según la edad (7-8 años: 11h; 9-12 años: 10h; 13-18 años: 9h)",
+      "habitos": ["Mantener horario consistente de sueño", "..."]
+    },
+    "estilo_vida": {
+      "descripcion": "Conservar los hábitos saludables actuales y promover un entorno de bienestar",
+      "actividad_fisica": "60 minutos diarios de actividad física lúdica o deportiva",
+      "recomendaciones": ["Control trimestral de peso y estatura", "..."]
+    }
+  }
 }
 ```
