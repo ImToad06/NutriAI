@@ -3,84 +3,111 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NutriIA - Evaluación Nutricional</title>
+    <title>NutriIA — Evaluación Nutricional</title>
     <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>NutriIA</h1>
-            <p class="subtitle">Sistema de Apoyo a la Decisión Clínica Nutricional - PAE Colombia</p>
+    <div class="page">
+        <header class="header">
+            <div class="logo">
+                <div class="logo-icon">N</div>
+                <div>
+                    <h1>NutriIA</h1>
+                    <p class="tagline">Evaluación Nutricional — PAE Colombia</p>
+                </div>
+            </div>
         </header>
 
-        <div class="disclaimer" id="disclaimer-bar">
-            <input type="checkbox" id="disclaimer-check">
-            <label for="disclaimer-check">
-                <strong>Aviso Ético y Legal:</strong> Esta herramienta es un sistema de apoyo a la decisión clínica (CDSS) 
-                y <strong>no reemplaza</strong> el criterio médico profesional. Los resultados deben ser validados por un 
-                profesional de salud calificado. Al marcar esta casilla, usted acepta que los datos ingresados son anonimizados 
-                y se procesan conforme a la Ley 1581 de 2012 (Protección de Datos Personales, Colombia).
+        <div class="disclaimer-card" id="disclaimer-card">
+            <div class="disclaimer-header">
+                <span class="disclaimer-icon">&#9888;</span>
+                <span class="disclaimer-title">Aviso Ético y Legal</span>
+            </div>
+            <p class="disclaimer-text">
+                Esta herramienta es un sistema de apoyo a la decisión clínica (CDSS) y
+                <strong>no reemplaza</strong> el criterio médico profesional. Los resultados deben ser
+                validados por un profesional de salud calificado. Al continuar, usted acepta que los datos
+                se procesan conforme a la Ley 1581 de 2012 (Protección de Datos Personales, Colombia).
+            </p>
+            <label class="disclaimer-check">
+                <input type="checkbox" id="disclaimer-check">
+                <span class="checkmark"></span>
+                <span>Acepto el aviso ético y legal</span>
             </label>
         </div>
 
-        <form id="evaluation-form" class="form-card disabled" disabled>
+        <form id="evaluation-form" class="form-card disabled">
             <h2>Datos del Estudiante</h2>
 
             <div class="form-grid">
                 <div class="form-group">
-                    <label for="edad_meses">Edad (meses)</label>
-                    <input type="number" id="edad_meses" name="edad_meses" min="1" max="240" step="1" required placeholder="Ej: 120">
+                    <label for="edad_anios">Edad <span class="unit">años</span></label>
+                    <input type="number" id="edad_anios" name="edad_anios" min="1" max="18" required placeholder="Ej: 10">
                 </div>
 
                 <div class="form-group">
-                    <label for="peso_kg">Peso (kg)</label>
+                    <label for="peso_kg">Peso <span class="unit">kg</span></label>
                     <input type="number" id="peso_kg" name="peso_kg" min="1" max="150" step="0.1" required placeholder="Ej: 35.0">
                 </div>
 
                 <div class="form-group">
-                    <label for="estatura_cm">Estatura (cm)</label>
-                    <input type="number" id="estatura_cm" name="estatura_cm" min="50" max="250" step="0.1" required placeholder="Ej: 140.0">
+                    <label for="estatura_cm">Estatura <span class="unit">cm</span></label>
+                    <input type="number" id="estatura_cm" name="estatura_cm" min="50" max="200" step="0.1" required placeholder="Ej: 140">
                 </div>
 
                 <div class="form-group">
-                    <label for="muac_cm">MUAC (Perímetro braquial en cm)</label>
+                    <label for="muac_cm">
+                        MUAC <span class="unit">cm</span>
+                        <span class="help-tip" title="Perímetro braquial: mida la circunferencia del brazo izquierdo a la mitad entre el hombro y el codo.">&#9432;</span>
+                    </label>
                     <input type="number" id="muac_cm" name="muac_cm" min="5" max="50" step="0.1" required placeholder="Ej: 18.0">
                 </div>
             </div>
 
-            <button type="submit" class="btn-submit" id="btn-submit">Evaluar Estado Nutricional</button>
+            <button type="submit" class="btn-submit" id="btn-submit">
+                <span class="btn-text">Evaluar Estado Nutricional</span>
+                <span class="btn-loading hidden">Evaluando&#8230;</span>
+            </button>
         </form>
 
         <div id="result-container" class="result-card hidden">
-            <h2>Resultado de la Evaluación</h2>
-            <div id="result-content">
-                <div class="result-imc">
-                    <span class="label">IMC Calculado:</span>
-                    <span id="result-imc-value" class="value">--</span>
+            <div class="result-header">
+                <div id="result-badge" class="result-badge">
+                    <span id="result-badge-icon" class="badge-icon"></span>
                 </div>
-                <div class="result-main">
-                    <div id="result-icon" class="result-icon"></div>
-                    <div class="result-text">
-                        <h3 id="result-prediccion">--</h3>
-                        <p id="result-descripcion">--</p>
-                    </div>
+                <div class="result-header-text">
+                    <h2 id="result-prediccion">—</h2>
+                    <p id="result-descripcion">—</p>
                 </div>
-                <div class="result-action">
-                    <span class="label">Acción Recomendada:</span>
-                    <p id="result-accion" class="action-text">--</p>
-                </div>
-                <div id="result-alert-bar" class="alert-bar"></div>
             </div>
+
+            <div class="result-stats">
+                <div class="stat">
+                    <span class="stat-value" id="result-imc-value">—</span>
+                    <span class="stat-label">IMC</span>
+                </div>
+            </div>
+
+            <div class="result-action">
+                <span class="action-label">Acción Recomendada</span>
+                <p id="result-accion">—</p>
+            </div>
+
+            <div id="result-alert-bar" class="alert-bar"></div>
         </div>
 
         <div id="error-container" class="error-card hidden">
+            <span class="error-icon">&#10060;</span>
             <p id="error-message"></p>
         </div>
-    </div>
 
-    <footer>
-        <p>NutriIA v1.0.0 &mdash; Prototipo de Investigación &mdash; PAE Colombia</p>
-    </footer>
+        <footer class="footer">
+            <p>NutriIA v1.0.0 &mdash; Prototipo de Investigación &mdash; PAE Colombia</p>
+        </footer>
+    </div>
 
     <script src="app.js"></script>
 </body>

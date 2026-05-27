@@ -3,6 +3,8 @@ const API_URL = "http://localhost:8000/predecir";
 const form = document.getElementById("evaluation-form");
 const disclaimerCheck = document.getElementById("disclaimer-check");
 const btnSubmit = document.getElementById("btn-submit");
+const btnText = document.querySelector(".btn-text");
+const btnLoading = document.querySelector(".btn-loading");
 const resultContainer = document.getElementById("result-container");
 const errorContainer = document.getElementById("error-container");
 
@@ -23,14 +25,15 @@ form.addEventListener("submit", async function (e) {
     }
 
     const data = {
-        edad_meses: parseFloat(document.getElementById("edad_meses").value),
+        edad_anios: parseInt(document.getElementById("edad_anios").value),
         peso_kg: parseFloat(document.getElementById("peso_kg").value),
         estatura_cm: parseFloat(document.getElementById("estatura_cm").value),
         muac_cm: parseFloat(document.getElementById("muac_cm").value),
     };
 
     btnSubmit.disabled = true;
-    btnSubmit.textContent = "Evaluando...";
+    btnText.classList.add("hidden");
+    btnLoading.classList.remove("hidden");
     errorContainer.classList.add("hidden");
     resultContainer.classList.add("hidden");
 
@@ -52,7 +55,8 @@ form.addEventListener("submit", async function (e) {
         showError(error.message);
     } finally {
         btnSubmit.disabled = false;
-        btnSubmit.textContent = "Evaluar Estado Nutricional";
+        btnText.classList.remove("hidden");
+        btnLoading.classList.add("hidden");
     }
 });
 
@@ -69,13 +73,14 @@ function displayResult(result) {
     if (alertClass === "rojo") {
         alertClass = "roja";
     }
-    const icon = document.getElementById("result-icon");
+
+    const badge = document.getElementById("result-badge");
     const alertBar = document.getElementById("result-alert-bar");
 
-    icon.className = "result-icon " + alertClass;
+    badge.className = "result-badge " + alertClass;
     alertBar.className = "alert-bar " + alertClass;
 
-    resultContainer.scrollIntoView({ behavior: "smooth" });
+    resultContainer.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
 function showError(message) {

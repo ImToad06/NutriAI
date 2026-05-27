@@ -18,8 +18,6 @@ def get_model():
     return _model
 
 
-# Diccionario de alertas alineado al protocolo PAE:
-# 0 (Naranja, Riesgo Moderado), 1 (Verde, Saludable), 2 (Rojo/Roja, Riesgo Severo)
 ALERT_MAP = {
     0: {
         "prediccion": "Riesgo Moderado",
@@ -45,16 +43,13 @@ ALERT_MAP = {
 def predict(data: dict) -> dict:
     model = get_model()
 
-    edad_meses = float(data["edad_meses"])
+    edad_meses = float(data["edad_anios"]) * 12.0
     peso_kg = float(data["peso_kg"])
     estatura_cm = float(data["estatura_cm"])
     muac_cm = float(data["muac_cm"])
 
-    # Calcular el IMC: peso_kg / (estatura_cm/100)^2
     imc = peso_kg / ((estatura_cm / 100.0) ** 2)
 
-    # Construir el vector de entrada exactamente en este orden:
-    # [edad_meses, peso_kg, estatura_cm, muac_cm, imc]
     features = np.array([[edad_meses, peso_kg, estatura_cm, muac_cm, imc]])
 
     prediction = model.predict(features)[0]
