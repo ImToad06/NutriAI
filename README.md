@@ -608,6 +608,54 @@ El frontend incluye un checkbox obligatorio de aviso ético que debe ser aceptad
 
 ---
 
+## Changelog v2.0 — Sistema Integral de Seguimiento Nutricional PAE
+
+### Nuevas funcionalidades
+
+- **Persistencia SQLite (SQLAlchemy)**: estudiantes y evaluaciones ahora se almacenan en `nutripae.db` con migraciones automáticas al arrancar.
+- **Gestión de estudiantes (CRUD completo)**: alta, edición (PATCH/PUT), búsqueda por nombre/documento/grado, soft-delete opcional.
+- **Histórico de evaluaciones por estudiante**: endpoint `/students/{id}/trend` devuelve series temporales con z-score, IMC, peso, estatura, MUAC y alerta.
+- **Gráfica de tendencia (Chart.js)**: el detalle del estudiante muestra la evolución de peso, IMC o z-score con líneas de referencia OMS en `z=+2` y `z=-2`, y puntos coloreados según la alerta.
+- **Dashboard de cohorte**: página `/dashboard` con tarjetas de distribución, gráfica de barras comparando periodo actual vs. anterior, lista priorizada de casos críticos y filtros por colegio/grado/período.
+- **Carga masiva CSV y JSON**: endpoints `/evaluations/bulk` (JSON) y `/evaluations/bulk-csv` (multipart) con plantilla descargable, validación con `pandas` y reporte de errores por fila.
+- **Reporte PDF individual (reportlab)**: descarga de evaluación en PDF con datos del estudiante, mediciones, semáforo, plan alimentario, recomendaciones de sueño, estilo de vida, firma y aviso ético ENSIN.
+- **Cálculo de z-score OMS 2007**: módulo `backend/zscore.py` con tabla LMS BMI/edad (168 meses, ambos sexos) y semáforo (`< -2`/`> +2` Roja, `< -1`/`> +1` Naranja, resto Verde).
+- **Modelo v2 con z-score y sexo**: reentrenamiento de RandomForest incorporando `zscore_imc` y `sexo_codigo`; fallback de reglas OMS para casos extremos.
+- **Comparación ENSIN**: endpoint `/students/{id}/ensin` clasifica al estudiante en categorías ENSIN (Delgadez / Normal / Sobrepeso / Obesidad) y compara con la categoría OMS.
+- **Autenticación JWT + roles**: endpoints `POST /auth/login`, `POST /auth/register`, `GET /auth/me` con tokens `python-jose` y hashing `passlib[bcrypt]`. Roles `admin` y `nutricionista`. Endpoints de escritura (POST/PATCH/PUT/DELETE) requieren token válido; `/predecir` queda público por contrato histórico.
+- **Alertas críticas**: endpoint `GET /alerts/critical` lista estudiantes cuya última evaluación requiere seguimiento prioritario (Roja > 7 días, Naranja > 30, Verde > 90).
+- **Notas por evaluación**: endpoints para añadir y listar notas cualitativas a una evaluación específica con autor y timestamp.
+- **Frontend refactorizado (vanilla ES modules)**: 4 pestañas (Estudiantes / Evaluar / Detalle / Carga Masiva), login con bootstrap admin, dashboard con filtros, header con usuario y logout.
+
+### Endpoints nuevos (Fase 1-9)
+
+- `GET /health`
+- `POST /students`, `GET /students`, `GET /students/{id}`, `PATCH /students/{id}`, `PUT /students/{id}`, `DELETE /students/{id}`
+- `POST /students/{id}/evaluations`, `GET /students/{id}/evaluations`, `GET /students/{id}/trend`, `GET /students/{id}/ensin`
+- `GET /evaluations/{id}`, `DELETE /evaluations/{id}`
+- `POST /evaluations/bulk`, `POST /evaluations/bulk-csv`, `GET /evaluations/bulk-template`
+- `GET /students/{id}/evaluations/{eval_id}/pdf`
+- `GET /students/{id}/evaluations/{eval_id}/notes`, `POST /students/{id}/evaluations/{eval_id}/notes`
+- `GET /dashboard/summary`
+- `GET /alerts/critical`
+- `POST /auth/register`, `POST /auth/login`, `GET /auth/me`
+- Aliases históricos (compatibilidad v1.x): `GET/POST /estudiantes`, `PUT /estudiantes/{id}`, `POST /evaluar`
+
+### Dependencias añadidas
+
+- `pydantic[email]`, `email-validator==2.3.0`
+- `python-jose[cryptography]==3.5.0`, `passlib[bcrypt]==1.7.4`, `bcrypt==4.0.1`
+- `reportlab==4.5.1`
+- `python-multipart==0.0.30`
+
+### Notas de migración
+
+- `POST /predecir` mantiene contrato histórico (4 campos, sin auth) y ahora también devuelve `zscore_imc` y `modelo_usado`.
+- El modelo entrenado se regenera ejecutando `python model/train_model_v2.py`.
+- La primera vez que se inicia la app, se crea el primer usuario admin desde la pantalla de login (si la BD está vacía).
+
+---
+
 ## Licencia
 
 Ver archivo [LICENSE](LICENSE).

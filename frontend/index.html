@@ -8,10 +8,10 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 </head>
 <body>
     <div class="page">
-        <!-- Encabezado de la Aplicación -->
         <header class="header">
             <div class="logo">
                 <div class="logo-icon">N</div>
@@ -20,41 +20,56 @@
                     <p class="tagline">Apoyo a la Decisión Clínica • PAE Colombia</p>
                 </div>
             </div>
+            <div class="header-actions" id="header-actions">
+                <span class="user-tag" id="user-tag" hidden>
+                    <span id="user-name"></span>
+                    <span class="user-role" id="user-role"></span>
+                </span>
+                <a class="btn-link" href="dashboard.html">Dashboard</a>
+                <button class="btn-link" id="btn-logout" hidden>Cerrar sesión</button>
+                <a class="btn-link" href="login.html" id="btn-login-link">Iniciar sesión</a>
+            </div>
         </header>
 
-        <!-- Navegación por Pestañas (Tabs) -->
-        <div class="tab-nav">
-            <button class="tab-btn active" data-tab="tab-registro">
+        <nav class="tab-nav" id="tab-nav">
+            <button class="tab-btn active" data-tab="tab-estudiantes">
                 <span class="tab-icon">&#128100;</span> Estudiantes
             </button>
-            <button class="tab-btn" data-tab="tab-evaluacion">
-                <span class="tab-icon">&#129658;</span> Evaluar Nutrición
+            <button class="tab-btn" data-tab="tab-evaluar">
+                <span class="tab-icon">&#129658;</span> Evaluar
             </button>
-        </div>
+            <button class="tab-btn" data-tab="tab-detalle">
+                <span class="tab-icon">&#128202;</span> Detalle
+            </button>
+            <button class="tab-btn" data-tab="tab-carga">
+                <span class="tab-icon">&#128194;</span> Carga Masiva
+            </button>
+        </nav>
 
-        <!-- Contenedor Principal de Pestañas -->
         <main class="tab-content">
-            
-            <!-- PESTAÑA A: REGISTRO Y LISTA DE ESTUDIANTES -->
-            <section id="tab-registro" class="tab-panel active">
-                <!-- Formulario de Registro -->
+            <section id="tab-estudiantes" class="tab-panel active">
                 <form id="student-form" class="form-card">
                     <div class="card-header">
-                        <h2>Registrar Nuevo Estudiante</h2>
-                        <p class="card-subtitle">Ingrese la información básica del alumno para habilitar sus evaluaciones.</p>
+                        <h2 id="student-form-title">Registrar Nuevo Estudiante</h2>
+                        <p class="card-subtitle">Ingrese la información básica para habilitar sus evaluaciones.</p>
                     </div>
-
                     <div class="form-grid">
-                        <div class="form-group full-width">
-                            <label for="nombre">Nombre Completo</label>
-                            <input type="text" id="nombre" name="nombre" required placeholder="Ej. Juan Andrés Pérez Gómez">
+                        <div class="form-group">
+                            <label for="nombres">Nombres</label>
+                            <input type="text" id="nombres" name="nombres" required maxlength="100" placeholder="Ej. Juan Andrés">
                         </div>
-
+                        <div class="form-group">
+                            <label for="apellidos">Apellidos</label>
+                            <input type="text" id="apellidos" name="apellidos" required maxlength="100" placeholder="Ej. Pérez Gómez">
+                        </div>
+                        <div class="form-group">
+                            <label for="documento">Documento <span class="unit">(opcional)</span></label>
+                            <input type="text" id="documento" name="documento" maxlength="50" placeholder="TI / CC / RC">
+                        </div>
                         <div class="form-group">
                             <label for="fecha_nacimiento">Fecha de Nacimiento</label>
                             <input type="date" id="fecha_nacimiento" name="fecha_nacimiento" required>
                         </div>
-
                         <div class="form-group">
                             <label for="sexo">Sexo</label>
                             <select id="sexo" name="sexo" required>
@@ -64,8 +79,7 @@
                                 <option value="Otro">Otro</option>
                             </select>
                         </div>
-
-                        <div class="form-group full-width">
+                        <div class="form-group">
                             <label for="grado">Grado Escolar</label>
                             <select id="grado" name="grado" required>
                                 <option value="" disabled selected>Seleccione grado...</option>
@@ -83,43 +97,53 @@
                                 <option value="Once">Once</option>
                             </select>
                         </div>
-                    </div>
-
-                    <button type="submit" class="btn-submit" id="btn-register-submit">
-                        <span class="btn-text">Registrar Estudiante</span>
-                        <div class="btn-loading hidden">
-                            <span class="spinner"></span>
-                            <span>Registrando...</span>
+                        <div class="form-group full-width">
+                            <label for="colegio">Colegio <span class="unit">(opcional)</span></label>
+                            <input type="text" id="colegio" name="colegio" maxlength="150" placeholder="Ej. I.E. Técnica Industrial">
                         </div>
-                    </button>
+                    </div>
+                    <div class="btn-row">
+                        <button type="button" class="btn-cancel hidden" id="btn-cancel-edit">Cancelar</button>
+                        <button type="submit" class="btn-submit" id="btn-register-submit">
+                            <span class="btn-text">Registrar Estudiante</span>
+                            <div class="btn-loading hidden">
+                                <span class="spinner"></span>
+                                <span>Registrando...</span>
+                            </div>
+                        </button>
+                    </div>
                 </form>
 
-                <!-- Listado de Estudiantes en el Sistema -->
                 <div class="list-card">
                     <div class="card-header">
                         <h2>Estudiantes Registrados</h2>
-                        <p class="card-subtitle">Alumnos activos disponibles en el sistema.</p>
+                        <p class="card-subtitle">Haga clic en un estudiante para ver su histórico.</p>
+                    </div>
+                    <div class="filter-bar">
+                        <input type="text" id="search-estudiantes" class="search-input" placeholder="Buscar por nombre, apellido o documento...">
+                        <select id="filter-colegio" class="search-input">
+                            <option value="">Todos los colegios</option>
+                        </select>
+                        <select id="filter-grado" class="search-input">
+                            <option value="">Todos los grados</option>
+                        </select>
                     </div>
                     <div id="students-list" class="students-list">
-                        <!-- Se llena dinámicamente -->
-                        <div class="empty-list">No hay estudiantes registrados.</div>
+                        <div class="empty-list">Cargando estudiantes...</div>
                     </div>
                 </div>
             </section>
 
-            <!-- PESTAÑA B: EVALUACIÓN NUTRICIONAL -->
-            <section id="tab-evaluacion" class="tab-panel">
-                <!-- Aviso Ético y Legal -->
+            <section id="tab-evaluar" class="tab-panel">
                 <div class="disclaimer-card" id="disclaimer-card">
                     <div class="disclaimer-header">
                         <span class="disclaimer-icon">&#9888;</span>
                         <span class="disclaimer-title">Aviso Ético y Legal</span>
                     </div>
                     <p class="disclaimer-text">
-                        Esta herramienta es un sistema de apoyo a la decisión clínica (CDSS) y
-                        <strong>no reemplaza</strong> el criterio médico profesional. Los resultados deben ser
-                        validados por un profesional de salud calificado. Al continuar, acepta que los datos
-                        se procesan conforme a la Ley 1581 de 2012 (Protección de Datos Personales, Colombia).
+                        NutriIA es un sistema de apoyo a la decisión clínica (CDSS) y
+                        <strong>no reemplaza</strong> el criterio médico profesional. Al continuar, acepta
+                        que los datos se procesan conforme a la Ley 1581 de 2012 (Colombia).
                     </p>
                     <label class="disclaimer-check">
                         <input type="checkbox" id="disclaimer-check">
@@ -128,46 +152,39 @@
                     </label>
                 </div>
 
-                <!-- Formulario de Evaluación -->
                 <form id="evaluation-form" class="form-card disabled">
                     <div class="card-header">
                         <h2>Nueva Evaluación Clínico-Nutricional</h2>
-                        <p class="card-subtitle">Seleccione un estudiante e ingrese sus mediciones actuales.</p>
+                        <p class="card-subtitle">Seleccione un estudiante e ingrese sus mediciones.</p>
                     </div>
-
                     <div class="form-grid">
                         <div class="form-group full-width">
-                            <label for="id_estudiante">Seleccionar Estudiante</label>
-                            <input type="text" id="search-estudiante" class="search-input" placeholder="🔍 Buscar estudiante por nombre...">
+                            <label for="id_estudiante">Estudiante</label>
+                            <input type="text" id="search-estudiante" class="search-input" placeholder="Buscar por nombre o documento...">
                             <select id="id_estudiante" name="id_estudiante" required>
-                                <option value="" disabled selected>Cargando estudiantes...</option>
+                                <option value="" disabled selected>Cargando...</option>
                             </select>
                         </div>
-
                         <div class="form-group">
                             <label for="peso_kg">Peso <span class="unit">kg</span></label>
                             <input type="number" id="peso_kg" name="peso_kg" min="1" max="150" step="0.1" required placeholder="Ej. 35.0">
                         </div>
-
                         <div class="form-group">
                             <label for="estatura_cm">Estatura <span class="unit">cm</span></label>
                             <input type="number" id="estatura_cm" name="estatura_cm" min="50" max="250" step="0.1" required placeholder="Ej. 140">
                         </div>
-
                         <div class="form-group">
                             <label for="muac_cm">
                                 MUAC <span class="unit">cm</span>
-                                <span class="help-tip" title="Perímetro braquial: mida la circunferencia del brazo izquierdo en el punto medio entre el hombro y el codo.">&#9432;</span>
+                                <span class="help-tip" title="Perímetro braquial: circunferencia del brazo izquierdo en el punto medio entre el hombro y el codo.">&#9432;</span>
                             </label>
                             <input type="number" id="muac_cm" name="muac_cm" min="5" max="50" step="0.1" required placeholder="Ej. 18.0">
                         </div>
-
                         <div class="form-group full-width">
-                            <label for="observaciones">Observaciones Clínicas <span class="unit">(Opcional)</span></label>
-                            <textarea id="observaciones" name="observaciones" rows="3" placeholder="Ej. Se observa cansancio leve en clase o sin alteraciones notables."></textarea>
+                            <label for="notas">Notas Clínicas <span class="unit">(opcional)</span></label>
+                            <textarea id="notas" name="notas" rows="3" placeholder="Observaciones sobre el estado del estudiante al momento de la evaluación."></textarea>
                         </div>
                     </div>
-
                     <button type="submit" class="btn-submit" id="btn-evaluation-submit">
                         <span class="btn-text">Evaluar Estado Nutricional</span>
                         <div class="btn-loading hidden">
@@ -177,53 +194,119 @@
                     </button>
                 </form>
 
-                <!-- Panel de Resultados de Evaluación -->
-                <div id="result-container" class="result-card hidden">
-                    <div class="result-header">
-                        <div id="result-badge" class="result-badge">
-                            <span id="result-badge-icon" class="badge-icon"></span>
-                        </div>
-                        <div class="result-header-text">
-                            <h2 id="result-prediccion">—</h2>
-                            <p id="result-descripcion">—</p>
-                        </div>
-                    </div>
-
-                    <div class="result-stats">
-                        <div class="stat">
-                            <span class="stat-value" id="result-imc-value">—</span>
-                            <span class="stat-label">IMC Calculado</span>
-                        </div>
-                    </div>
-
-                    <div class="result-action">
-                        <span class="action-label">Acción Recomendada</span>
-                        <p id="result-accion">—</p>
-                    </div>
-
-                    <div id="result-alert-bar" class="alert-bar"></div>
-                </div>
-
-                <!-- Plan de Seguimiento Detallado -->
+                <div id="result-container" class="result-card hidden"></div>
                 <div id="follow-up-plan" class="follow-up-card hidden"></div>
-
-                <!-- Botón de Nueva Evaluación -->
                 <div class="new-eval-container hidden" id="new-eval-container">
                     <button type="button" id="btn-new-eval" class="btn-new-eval">Nueva Evaluación</button>
+                    <button type="button" id="btn-view-eval-detail" class="btn-new-eval" hidden>Ver Detalle Completo</button>
+                </div>
+            </section>
+
+            <section id="tab-detalle" class="tab-panel">
+                <div id="detail-empty" class="list-card">
+                    <div class="empty-list">Seleccione un estudiante de la pestaña Estudiantes para ver su detalle.</div>
+                </div>
+                <div id="detail-content" class="hidden">
+                    <div class="form-card">
+                        <div class="card-header detail-header">
+                            <div>
+                                <h2 id="detail-name"></h2>
+                                <p class="card-subtitle" id="detail-meta"></p>
+                            </div>
+                            <button class="btn-cancel" id="btn-detail-back">Volver a la lista</button>
+                        </div>
+                        <div class="detail-stats" id="detail-stats"></div>
+                    </div>
+
+                    <div class="form-card">
+                        <div class="card-header">
+                            <h3>Curvas de tendencia</h3>
+                            <p class="card-subtitle">Evolución de peso, estatura, MUAC, IMC y z-score IMC/edad.</p>
+                        </div>
+                        <div class="chart-controls">
+                            <label>Variable a graficar:
+                                <select id="chart-variable">
+                                    <option value="peso_kg">Peso (kg)</option>
+                                    <option value="estatura_cm">Estatura (cm)</option>
+                                    <option value="muac_cm">MUAC (cm)</option>
+                                    <option value="imc">IMC (kg/m²)</option>
+                                    <option value="zscore_imc">Z-score IMC/edad (OMS)</option>
+                                </select>
+                            </label>
+                        </div>
+                        <div class="chart-wrap">
+                            <canvas id="trend-chart" height="120"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="form-card">
+                        <div class="card-header">
+                            <h3>Historial de evaluaciones</h3>
+                            <p class="card-subtitle">Listado cronológico con resultados y plan.</p>
+                        </div>
+                        <div id="evaluation-history" class="evaluations-history"></div>
+                    </div>
+
+                    <div class="form-card">
+                        <div class="card-header">
+                            <h3>Notas clínicas</h3>
+                            <p class="card-subtitle">Registro longitudinal de observaciones.</p>
+                        </div>
+                        <div class="note-form">
+                            <textarea id="note-input" rows="2" placeholder="Añadir nota clínica..."></textarea>
+                            <button type="button" class="btn-submit btn-submit-inline" id="btn-add-note">Agregar nota</button>
+                        </div>
+                        <ul id="notes-list" class="notes-list"></ul>
+                    </div>
+
+                    <div class="form-card">
+                        <div class="card-header">
+                            <h3>Comparación contra ENSIN</h3>
+                            <p class="card-subtitle">Referencia poblacional colombiana (datos aproximados).</p>
+                        </div>
+                        <div id="ensin-comparison"></div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="tab-carga" class="tab-panel">
+                <div class="form-card">
+                    <div class="card-header">
+                        <h2>Carga Masiva de Evaluaciones</h2>
+                        <p class="card-subtitle">Importe un archivo CSV con múltiples estudiantes y mediciones.</p>
+                    </div>
+                    <div class="bulk-info">
+                        <p><strong>Columnas esperadas:</strong> documento_estudiante, nombres, apellidos, fecha_nacimiento (AAAA-MM-DD), sexo (Masculino|Femenino|Otro), grado, colegio, peso_kg, estatura_cm, muac_cm, evaluador_email (opcional), notas (opcional).</p>
+                        <p>Si el estudiante no existe se crea automáticamente (búsqueda por documento). Se omitirán filas inválidas y se devolverá un resumen de errores.</p>
+                    </div>
+                    <div class="btn-row">
+                        <a class="btn-link" href="/evaluations/bulk-template" target="_blank" rel="noopener" id="btn-template">Descargar plantilla CSV</a>
+                    </div>
+                    <form id="bulk-form" class="bulk-form">
+                        <label class="bulk-file-label">
+                            <input type="file" id="bulk-file" accept=".csv" required>
+                            <span>Seleccionar archivo CSV...</span>
+                        </label>
+                        <input type="text" id="bulk-default-colegio" placeholder="Colegio por defecto (opcional)">
+                        <button type="submit" class="btn-submit" id="btn-bulk-submit">
+                            <span class="btn-text">Procesar archivo</span>
+                            <div class="btn-loading hidden">
+                                <span class="spinner"></span>
+                                <span>Procesando...</span>
+                            </div>
+                        </button>
+                    </form>
+                    <div id="bulk-results" class="bulk-results hidden"></div>
                 </div>
             </section>
         </main>
 
-        <!-- Contenedor General de Notificaciones y Errores -->
-        <!-- Footer -->
         <footer class="footer">
-            <p>NutriPAE IA v1.1.0 • Prototipo de Apoyo Clínico Inteligente • PAE Colombia</p>
+            <p>NutriPAE IA v2.0.0 • Sistema de Seguimiento Nutricional Escolar • PAE Colombia</p>
         </footer>
     </div>
 
-    <!-- Contenedor para Notificaciones Flotantes (Toasts) -->
-    <div id="toast-container" style="position: fixed; top: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px;"></div>
-
-    <script src="app.js"></script>
+    <div id="toast-container" class="toast-container"></div>
+    <script src="app.js" type="module"></script>
 </body>
 </html>

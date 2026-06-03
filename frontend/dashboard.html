@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NutriPAE IA — Dashboard de Cohorte</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+</head>
+<body>
+    <div class="page">
+        <header class="header">
+            <div class="logo">
+                <div class="logo-icon">N</div>
+                <div>
+                    <h1>Dashboard de Cohorte</h1>
+                    <p class="tagline">Resumen poblacional del seguimiento nutricional</p>
+                </div>
+            </div>
+            <div class="header-actions">
+                <a class="btn-link" href="index.html">← Volver</a>
+                <span class="user-tag" id="user-tag" hidden>
+                    <span id="user-name"></span>
+                    <span class="user-role" id="user-role"></span>
+                </span>
+            </div>
+        </header>
+
+        <div class="form-card">
+            <div class="card-header">
+                <h2>Filtros</h2>
+                <p class="card-subtitle">Refine la cohorte por colegio, grado, fecha o alerta.</p>
+            </div>
+            <div class="filter-bar" style="grid-template-columns: repeat(4, 1fr);">
+                <select id="f-colegio"><option value="">Todos los colegios</option></select>
+                <select id="f-grado"><option value="">Todos los grados</option></select>
+                <input type="date" id="f-desde" class="search-input">
+                <input type="date" id="f-hasta" class="search-input">
+            </div>
+            <div class="filter-bar" style="grid-template-columns: repeat(4, 1fr); margin-top:0.5rem;">
+                <select id="f-alerta">
+                    <option value="">Todas las alertas</option>
+                    <option value="Verde">Solo Verde</option>
+                    <option value="Naranja">Solo Naranja</option>
+                    <option value="Roja">Solo Roja</option>
+                </select>
+                <button type="button" class="btn-submit btn-submit-inline" id="btn-apply">Aplicar filtros</button>
+                <button type="button" class="btn-cancel" id="btn-reset">Limpiar</button>
+            </div>
+        </div>
+
+        <div class="dashboard-cards" id="dashboard-cards"></div>
+
+        <div class="form-card">
+            <div class="card-header">
+                <h2>Distribución de alertas (última evaluación)</h2>
+                <p class="card-subtitle">Comparación porcentual con el periodo anterior.</p>
+            </div>
+            <div class="chart-wrap" style="height:280px;"><canvas id="chart-distrib"></canvas></div>
+        </div>
+
+        <div class="form-card">
+            <div class="card-header">
+                <h2>Casos críticos</h2>
+                <p class="card-subtitle">Última alerta Roja o con tiempo de re-evaluación vencido.</p>
+            </div>
+            <div id="critical-list"></div>
+        </div>
+
+        <div class="form-card">
+            <div class="card-header">
+                <h2>Estudiantes en riesgo (alerta Roja)</h2>
+                <p class="card-subtitle">Ordenados por tiempo sin re-evaluación. Haga clic para ver el detalle.</p>
+            </div>
+            <div id="riesgo-table-wrap"></div>
+        </div>
+
+        <footer class="footer">
+            <p>NutriPAE IA v2.0.0 • Dashboard de Cohorte</p>
+        </footer>
+    </div>
+
+    <div id="toast-container" class="toast-container"></div>
+    <script src="dashboard.js" type="module"></script>
+</body>
+</html>

@@ -1,7 +1,18 @@
+"""Motor de predicción NutriIA v2.
+
+Integra el modelo RandomForest con z-score IMC/edad (OMS 2007) y sexo biológico
+como features principales. Mantiene un fallback basado en reglas OMS para
+casos extremos o cuando el modelo no tiene features completas.
+"""
+
 import os
+from typing import Optional
+
 import joblib
 import numpy as np
 import pandas as pd
+
+from backend.zscore import alerta_desde_z, imc_zscore
 
 MODEL_PATH = os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
@@ -9,10 +20,10 @@ MODEL_PATH = os.path.join(
     "modelo_rf_nutriia.pkl",
 )
 
-_modelo_data = None
+_modelo_data: Optional[dict] = None
 
 
-def _load_modelo_data():
+def _load_modelo_data() -> dict:
     global _modelo_data
     if _modelo_data is None:
         _modelo_data = joblib.load(MODEL_PATH)
@@ -26,10 +37,17 @@ def get_model():
     return data
 
 
-def get_model_columns():
+def get_model_columns() -> Optional[list]:
     data = _load_modelo_data()
     if isinstance(data, dict) and "columnas_modelo" in data:
         return data["columnas_modelo"]
+    return None
+
+
+def get_model_version() -> Optional[str]:
+    data = _load_modelo_data()
+    if isinstance(data, dict) and "version" in data:
+        return data["version"]
     return None
 
 
@@ -176,84 +194,175 @@ ALERT_MAP = {
 }
 
 
-def regla_seguridad_nutricional(edad_meses, peso_kg, estatura_cm, muac_cm):
+def _sex_to_code(sexo: Optional[str]) -> int:
+    if not sexo:
+        return 1
+    s = str(sexo).strip().lower()
+    if s.startswith("m") or s == "hombre":
+        return 1
+    return 0
+
+
+def regla_seguridad_nutricional(
+    peso_kg: float,
+    estatura_cm: float,
+    muac_cm: float,
+    zscore_imc: Optional[float] = None,
+):
+    """Reglas OMS para casos extremos antes de pasar por el modelo.
+
+    Mapea el resultado a un código (0/1/2) o devuelve None si no aplica.
+    Si se conoce el z-score, se prioriza como fuente principal.
     """
-    Reglas de seguridad para evitar predicciones ilógicas del modelo en casos extremos.
-    Devuelve el código de ALERT_MAP (0=moderado, 1=saludable, 2=severo) o None.
-    """
+    if estatura_cm <= 0:
+        return None, None
     imc = peso_kg / ((estatura_cm / 100.0) ** 2)
 
-    # Casos físicamente imposibles o de riesgo extremo
-    if edad_meses >= 60 and peso_kg < 12:
+    if peso_kg < 12 and estatura_cm >= 90:
         return 2, "Peso extremadamente bajo para la edad escolar."
-
-    if imc < 12:
+    if imc < 11.5:
         return 2, "IMC extremadamente bajo."
-
-    if muac_cm < 11.5:
+    if muac_cm < 11.0:
         return 2, "MUAC extremadamente bajo."
 
-    # Riesgo moderado por bajo IMC o MUAC bajo
-    if 12 <= imc < 14:
+    if zscore_imc is not None and not np.isnan(zscore_imc):
+        if zscore_imc < -3:
+            return 2, f"Z-score IMC {zscore_imc:.2f} (< -3): delgadez severa."
+        if zscore_imc > 3:
+            return 2, f"Z-score IMC {zscore_imc:.2f} (> +3): obesidad severa."
+
+    if 11.5 <= imc < 13.5:
         return 0, "IMC bajo con posible riesgo nutricional."
-
-    if 11.5 <= muac_cm < 12.5:
+    if 11.0 <= muac_cm < 12.5:
         return 0, "MUAC bajo con posible riesgo nutricional."
-
-    # Riesgo por exceso de peso
     if imc >= 30:
         return 2, "IMC extremadamente alto."
-
     if 25 <= imc < 30:
         return 0, "IMC elevado con posible riesgo nutricional."
+
+    if zscore_imc is not None and not np.isnan(zscore_imc):
+        if -3 <= zscore_imc < -2 or 2 < zscore_imc <= 3:
+            return 0, f"Z-score IMC {zscore_imc:.2f} en zona de riesgo."
 
     return None, None
 
 
-def predict(data: dict) -> dict:
-    model = get_model()
+def _build_features(
+    edad_meses: float,
+    peso_kg: float,
+    estatura_cm: float,
+    muac_cm: float,
+    imc: float,
+    zscore_imc: Optional[float],
+    sexo: Optional[str],
+) -> np.ndarray:
+    cols = get_model_columns() or [
+        "edad_meses",
+        "peso_kg",
+        "estatura_cm",
+        "muac_cm",
+        "imc",
+        "zscore_imc",
+        "sexo_codigo",
+    ]
+    row = {
+        "edad_meses": float(edad_meses),
+        "peso_kg": float(peso_kg),
+        "estatura_cm": float(estatura_cm),
+        "muac_cm": float(muac_cm),
+        "imc": float(imc),
+        "zscore_imc": float(zscore_imc) if zscore_imc is not None and not np.isnan(zscore_imc) else 0.0,
+        "sexo_codigo": float(_sex_to_code(sexo)),
+    }
+    return pd.DataFrame([[row.get(c, 0.0) for c in cols]], columns=cols)
 
-    edad_meses = float(data["edad_anios"]) * 12.0
+
+def predict(data: dict) -> dict:
+    """Predicción principal.
+
+    Espera: edad_anios (o edad_meses), peso_kg, estatura_cm, muac_cm, sexo (opcional).
+    """
+    if "edad_meses" in data and "edad_anios" not in data:
+        edad_meses = float(data["edad_meses"])
+    else:
+        edad_meses = float(data["edad_anios"]) * 12.0
     peso_kg = float(data["peso_kg"])
     estatura_cm = float(data["estatura_cm"])
     muac_cm = float(data["muac_cm"])
+    sexo = data.get("sexo") or data.get("sex")
 
     if estatura_cm < 50.0 or estatura_cm > 250.0:
         raise ValueError(f"Estatura fuera del rango fisiológico: {estatura_cm} cm")
+    if peso_kg <= 0 or peso_kg > 150.0:
+        raise ValueError(f"Peso fuera del rango fisiológico: {peso_kg} kg")
+    if muac_cm <= 0 or muac_cm > 50.0:
+        raise ValueError(f"MUAC fuera del rango fisiológico: {muac_cm} cm")
+
     imc = peso_kg / ((estatura_cm / 100.0) ** 2)
+    zscore = imc_zscore(imc, edad_meses, sexo)
 
-    # Aplicar reglas de seguridad antes del modelo
-    codigo_seguridad, motivo_seguridad = regla_seguridad_nutricional(
-        edad_meses, peso_kg, estatura_cm, muac_cm
+    codigo_seg, motivo = regla_seguridad_nutricional(
+        peso_kg, estatura_cm, muac_cm, zscore_imc=zscore
     )
-
-    if codigo_seguridad is not None:
-        alert_info = ALERT_MAP.get(codigo_seguridad, ALERT_MAP[1])
+    if codigo_seg is not None:
+        info = ALERT_MAP.get(codigo_seg, ALERT_MAP[1])
         return {
-            "prediccion": alert_info["prediccion"],
-            "alerta": alert_info["alerta"],
+            "prediccion": info["prediccion"],
+            "alerta": info["alerta"],
             "imc": round(float(imc), 2),
-            "descripcion": f"{alert_info['descripcion']} ({motivo_seguridad})",
-            "accion": alert_info["accion"],
-            "plan_seguimiento": alert_info["plan_seguimiento"],
+            "descripcion": f"{info['descripcion']} ({motivo})",
+            "accion": info["accion"],
+            "plan_seguimiento": info["plan_seguimiento"],
+            "zscore_imc": zscore,
+            "modelo_usado": "regla_seguridad",
         }
 
-    cols = get_model_columns()
-    if cols is not None:
-        features = pd.DataFrame([[edad_meses, peso_kg, estatura_cm, muac_cm, imc]], columns=cols)
-    else:
-        features = np.array([[edad_meses, peso_kg, estatura_cm, muac_cm, imc]])
+    features = _build_features(
+        edad_meses=edad_meses,
+        peso_kg=peso_kg,
+        estatura_cm=estatura_cm,
+        muac_cm=muac_cm,
+        imc=imc,
+        zscore_imc=zscore,
+        sexo=sexo,
+    )
+    model = get_model()
+    prediction = int(model.predict(features)[0])
 
-    prediction = model.predict(features)[0]
-    result = int(prediction)
-
-    alert_info = ALERT_MAP.get(result, ALERT_MAP[1])
-
+    info = ALERT_MAP.get(prediction, ALERT_MAP[1])
     return {
-        "prediccion": alert_info["prediccion"],
-        "alerta": alert_info["alerta"],
+        "prediccion": info["prediccion"],
+        "alerta": info["alerta"],
         "imc": round(float(imc), 2),
-        "descripcion": alert_info["descripcion"],
-        "accion": alert_info["accion"],
-        "plan_seguimiento": alert_info["plan_seguimiento"],
+        "descripcion": info["descripcion"],
+        "accion": info["accion"],
+        "plan_seguimiento": info["plan_seguimiento"],
+        "zscore_imc": zscore,
+        "modelo_usado": f"random_forest_{get_model_version() or 'v1'}",
     }
+
+
+def predict_proba(data: dict) -> Optional[np.ndarray]:
+    try:
+        if "edad_meses" in data and "edad_anios" not in data:
+            edad_meses = float(data["edad_meses"])
+        else:
+            edad_meses = float(data["edad_anios"]) * 12.0
+        peso_kg = float(data["peso_kg"])
+        estatura_cm = float(data["estatura_cm"])
+        muac_cm = float(data["muac_cm"])
+        sexo = data.get("sexo") or data.get("sex")
+        imc = peso_kg / ((estatura_cm / 100.0) ** 2)
+        zscore = imc_zscore(imc, edad_meses, sexo)
+        features = _build_features(
+            edad_meses=edad_meses,
+            peso_kg=peso_kg,
+            estatura_cm=estatura_cm,
+            muac_cm=muac_cm,
+            imc=imc,
+            zscore_imc=zscore,
+            sexo=sexo,
+        )
+        return get_model().predict_proba(features)[0]
+    except Exception:
+        return None
