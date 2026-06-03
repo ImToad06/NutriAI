@@ -1,3 +1,5 @@
+from datetime import date
+
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
@@ -5,6 +7,14 @@ from sqlalchemy.orm import Session
 from backend import models, schemas
 from backend.database import engine, get_db
 from backend.model_service import predict
+
+
+def calcular_edad(fecha_nacimiento: date) -> int:
+    hoy = date.today()
+    edad = hoy.year - fecha_nacimiento.year
+    if (hoy.month, hoy.day) < (fecha_nacimiento.month, fecha_nacimiento.day):
+        edad -= 1
+    return edad
 
 # Crear las tablas en la base de datos al arrancar
 # En entornos de producción reales se suelen utilizar migraciones (ej. Alembic)
@@ -106,10 +116,13 @@ def evaluar_estudiante(evaluacion: schemas.EvaluacionCreate, db: Session = Depen
             detail=f"El estudiante con id_estudiante {evaluacion.id_estudiante} no existe.",
         )
 
-    # 2. Ejecutar la función predict() del modelo usando los datos biométricos
+    # 2. Calcular edad desde fecha_nacimiento del estudiante
+    edad_anios = calcular_edad(db_estudiante.fecha_nacimiento)
+
+    # 3. Ejecutar la función predict() del modelo usando los datos biométricos
     try:
         input_data = {
-            "edad_anios": evaluacion.edad_anios,
+            "edad_anios": edad_anios,
             "peso_kg": evaluacion.peso_kg,
             "estatura_cm": evaluacion.estatura_cm,
             "muac_cm": evaluacion.muac_cm,
@@ -123,7 +136,7 @@ def evaluar_estudiante(evaluacion: schemas.EvaluacionCreate, db: Session = Depen
             detail=f"Error en el motor de predicción: {str(e)}",
         )
 
-    # 3. Guardar la evaluación en la base de datos
+    # 4. Guardar la evaluación en la base de datos
     try:
         db_evaluacion = models.Evaluacion(
             id_estudiante=evaluacion.id_estudiante,
@@ -142,5 +155,5 @@ def evaluar_estudiante(evaluacion: schemas.EvaluacionCreate, db: Session = Depen
             detail=f"Error al guardar la evaluación en la base de datos: {str(e)}",
         )
 
-    # 4. Retornar la respuesta predictiva
+    # 5. Retornar la respuesta predictiva
     return schemas.PredictionResponse(**prediction_result)

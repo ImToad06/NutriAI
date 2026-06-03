@@ -83,13 +83,13 @@ class EstudianteResponse(BaseModel):
 
 
 class EvaluacionCreate(PatientData):
+    edad_anios: int | None = Field(None, description="Edad en años (se calcula automáticamente desde fecha_nacimiento del estudiante)")
     id_estudiante: int = Field(..., description="ID del estudiante asociado a esta evaluación")
     observaciones: str | None = Field(None, description="Observaciones clínicas adicionales")
 
     class Config:
         json_schema_extra = {
             "example": {
-                "edad_anios": 10,
                 "peso_kg": 35.0,
                 "estatura_cm": 140.0,
                 "muac_cm": 18.0,

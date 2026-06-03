@@ -120,7 +120,8 @@ function populateStudentsSelect(students) {
     students.forEach(s => {
         const option = document.createElement("option");
         option.value = s.id_estudiante;
-        option.textContent = `${s.nombre} (${s.grado})`;
+        const edad = calcularEdad(s.fecha_nacimiento);
+        option.textContent = `${s.nombre} (${edad} años, ${s.grado})`;
         selectEstudiante.appendChild(option);
     });
 
@@ -253,7 +254,6 @@ evaluationForm.addEventListener("submit", async function (e) {
 
     const data = {
         id_estudiante: idEstudiante,
-        edad_anios: parseInt(document.getElementById("edad_anios").value),
         peso_kg: parseFloat(document.getElementById("peso_kg").value),
         estatura_cm: parseFloat(document.getElementById("estatura_cm").value),
         muac_cm: parseFloat(document.getElementById("muac_cm").value),
@@ -313,7 +313,7 @@ function displayResult(result) {
 
 function renderFollowUpPlan(plan, alertClass) {
     followUpPlan.classList.remove("hidden");
-    followUpPlan.className = `follow-up-card slide-up ${alertClass}`;
+    followUpPlan.className = `follow-up-card ${alertClass}`;
 
     followUpPlan.innerHTML = `
         <h3 class="follow-up-title">Plan de Seguimiento Personalizado</h3>
@@ -437,6 +437,17 @@ function resetEvaluationView() {
     resultContainer.classList.add("hidden");
     followUpPlan.classList.add("hidden");
     newEvalContainer.classList.add("hidden");
+}
+
+function calcularEdad(fechaNacimiento) {
+    const hoy = new Date();
+    const nacimiento = new Date(fechaNacimiento);
+    let edad = hoy.getFullYear() - nacimiento.getFullYear();
+    const mes = hoy.getMonth() - nacimiento.getMonth();
+    if (mes < 0 || (mes === 0 && hoy.getDate() < nacimiento.getDate())) {
+        edad--;
+    }
+    return edad;
 }
 
 function escapeHtml(text) {
