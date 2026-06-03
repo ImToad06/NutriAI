@@ -1,3 +1,4 @@
+from datetime import date, datetime
 from pydantic import BaseModel, Field
 
 
@@ -50,3 +51,49 @@ class PredictionResponse(BaseModel):
     descripcion: str = Field(..., description="Descripción del resultado")
     accion: str = Field(..., description="Acción recomendada")
     plan_seguimiento: PlanSeguimiento = Field(..., description="Plan de seguimiento personalizado según el resultado")
+
+
+class EstudianteCreate(BaseModel):
+    nombre: str = Field(..., min_length=1, max_length=100, description="Nombre completo del estudiante")
+    fecha_nacimiento: date = Field(..., description="Fecha de nacimiento del estudiante (AAAA-MM-DD)")
+    sexo: str = Field(..., min_length=1, max_length=10, description="Sexo del estudiante")
+    grado: str = Field(..., min_length=1, max_length=20, description="Grado escolar del estudiante")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "nombre": "Juan Pérez",
+                "fecha_nacimiento": "2015-06-15",
+                "sexo": "Masculino",
+                "grado": "Quinto",
+            }
+        }
+
+
+class EstudianteResponse(BaseModel):
+    id_estudiante: int = Field(..., description="ID único autoincremental del estudiante")
+    nombre: str = Field(..., description="Nombre completo del estudiante")
+    fecha_nacimiento: date = Field(..., description="Fecha de nacimiento")
+    sexo: str = Field(..., description="Sexo del estudiante")
+    grado: str = Field(..., description="Grado escolar")
+    fecha_registro: datetime = Field(..., description="Fecha y hora de registro")
+
+    class Config:
+        from_attributes = True
+
+
+class EvaluacionCreate(PatientData):
+    id_estudiante: int = Field(..., description="ID del estudiante asociado a esta evaluación")
+    observaciones: str | None = Field(None, description="Observaciones clínicas adicionales")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "edad_anios": 10,
+                "peso_kg": 35.0,
+                "estatura_cm": 140.0,
+                "muac_cm": 18.0,
+                "id_estudiante": 1,
+                "observaciones": "El estudiante muestra buena disposición, sin síntomas visibles de fatiga.",
+            }
+        }

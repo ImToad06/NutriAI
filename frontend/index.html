@@ -3,117 +3,236 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NutriIA — Evaluación Nutricional</title>
+    <title>NutriPAE IA — Gestión y Evaluación Nutricional</title>
     <link rel="stylesheet" href="styles.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
 <body>
     <div class="page">
+        <!-- Encabezado de la Aplicación -->
         <header class="header">
             <div class="logo">
                 <div class="logo-icon">N</div>
                 <div>
-                    <h1>NutriIA</h1>
-                    <p class="tagline">Evaluación Nutricional — PAE Colombia</p>
+                    <h1>NutriPAE IA</h1>
+                    <p class="tagline">Apoyo a la Decisión Clínica • PAE Colombia</p>
                 </div>
             </div>
         </header>
 
-        <div class="disclaimer-card" id="disclaimer-card">
-            <div class="disclaimer-header">
-                <span class="disclaimer-icon">&#9888;</span>
-                <span class="disclaimer-title">Aviso Ético y Legal</span>
-            </div>
-            <p class="disclaimer-text">
-                Esta herramienta es un sistema de apoyo a la decisión clínica (CDSS) y
-                <strong>no reemplaza</strong> el criterio médico profesional. Los resultados deben ser
-                validados por un profesional de salud calificado. Al continuar, usted acepta que los datos
-                se procesan conforme a la Ley 1581 de 2012 (Protección de Datos Personales, Colombia).
-            </p>
-            <label class="disclaimer-check">
-                <input type="checkbox" id="disclaimer-check">
-                <span class="checkmark"></span>
-                <span>Acepto el aviso ético y legal</span>
-            </label>
-        </div>
-
-        <form id="evaluation-form" class="form-card disabled">
-            <h2>Datos del Estudiante</h2>
-
-            <div class="form-grid">
-                <div class="form-group">
-                    <label for="edad_anios">Edad <span class="unit">años</span></label>
-                    <input type="number" id="edad_anios" name="edad_anios" min="1" max="18" required placeholder="Ej: 10">
-                </div>
-
-                <div class="form-group">
-                    <label for="peso_kg">Peso <span class="unit">kg</span></label>
-                    <input type="number" id="peso_kg" name="peso_kg" min="1" max="150" step="0.1" required placeholder="Ej: 35.0">
-                </div>
-
-                <div class="form-group">
-                    <label for="estatura_cm">Estatura <span class="unit">cm</span></label>
-                    <input type="number" id="estatura_cm" name="estatura_cm" min="50" max="200" step="0.1" required placeholder="Ej: 140">
-                </div>
-
-                <div class="form-group">
-                    <label for="muac_cm">
-                        MUAC <span class="unit">cm</span>
-                        <span class="help-tip" title="Perímetro braquial: mida la circunferencia del brazo izquierdo a la mitad entre el hombro y el codo.">&#9432;</span>
-                    </label>
-                    <input type="number" id="muac_cm" name="muac_cm" min="5" max="50" step="0.1" required placeholder="Ej: 18.0">
-                </div>
-            </div>
-
-            <button type="submit" class="btn-submit" id="btn-submit">
-                <span class="btn-text">Evaluar Estado Nutricional</span>
-                <span class="btn-loading hidden">Evaluando&#8230;</span>
+        <!-- Navegación por Pestañas (Tabs) -->
+        <div class="tab-nav">
+            <button class="tab-btn active" data-tab="tab-registro">
+                <span class="tab-icon">&#128100;</span> Estudiantes
             </button>
-        </form>
-
-        <div id="result-container" class="result-card hidden">
-            <div class="result-header">
-                <div id="result-badge" class="result-badge">
-                    <span id="result-badge-icon" class="badge-icon"></span>
-                </div>
-                <div class="result-header-text">
-                    <h2 id="result-prediccion">—</h2>
-                    <p id="result-descripcion">—</p>
-                </div>
-            </div>
-
-            <div class="result-stats">
-                <div class="stat">
-                    <span class="stat-value" id="result-imc-value">—</span>
-                    <span class="stat-label">IMC</span>
-                </div>
-            </div>
-
-            <div class="result-action">
-                <span class="action-label">Acción Recomendada</span>
-                <p id="result-accion">—</p>
-            </div>
-
-            <div id="result-alert-bar" class="alert-bar"></div>
+            <button class="tab-btn" data-tab="tab-evaluacion">
+                <span class="tab-icon">&#129658;</span> Evaluar Nutrición
+            </button>
         </div>
 
-        <div id="follow-up-plan" class="follow-up-card hidden"></div>
+        <!-- Contenedor Principal de Pestañas -->
+        <main class="tab-content">
+            
+            <!-- PESTAÑA A: REGISTRO Y LISTA DE ESTUDIANTES -->
+            <section id="tab-registro" class="tab-panel active">
+                <!-- Formulario de Registro -->
+                <form id="student-form" class="form-card">
+                    <div class="card-header">
+                        <h2>Registrar Nuevo Estudiante</h2>
+                        <p class="card-subtitle">Ingrese la información básica del alumno para habilitar sus evaluaciones.</p>
+                    </div>
 
-        <div class="new-eval-container hidden" id="new-eval-container">
-            <button type="button" id="btn-new-eval" class="btn-new-eval">Nueva Evaluación</button>
-        </div>
+                    <div class="form-grid">
+                        <div class="form-group full-width">
+                            <label for="nombre">Nombre Completo</label>
+                            <input type="text" id="nombre" name="nombre" required placeholder="Ej. Juan Andrés Pérez Gómez">
+                        </div>
 
+                        <div class="form-group">
+                            <label for="fecha_nacimiento">Fecha de Nacimiento</label>
+                            <input type="date" id="fecha_nacimiento" name="fecha_nacimiento" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="sexo">Sexo</label>
+                            <select id="sexo" name="sexo" required>
+                                <option value="" disabled selected>Seleccione...</option>
+                                <option value="Masculino">Masculino</option>
+                                <option value="Femenino">Femenino</option>
+                                <option value="Otro">Otro</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group full-width">
+                            <label for="grado">Grado Escolar</label>
+                            <select id="grado" name="grado" required>
+                                <option value="" disabled selected>Seleccione grado...</option>
+                                <option value="Transición">Transición</option>
+                                <option value="Primero">Primero</option>
+                                <option value="Segundo">Segundo</option>
+                                <option value="Tercero">Tercero</option>
+                                <option value="Cuarto">Cuarto</option>
+                                <option value="Quinto">Quinto</option>
+                                <option value="Sexto">Sexto</option>
+                                <option value="Séptimo">Séptimo</option>
+                                <option value="Octavo">Octavo</option>
+                                <option value="Noveno">Noveno</option>
+                                <option value="Décimo">Décimo</option>
+                                <option value="Once">Once</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn-submit" id="btn-register-submit">
+                        <span class="btn-text">Registrar Estudiante</span>
+                        <div class="btn-loading hidden">
+                            <span class="spinner"></span>
+                            <span>Registrando...</span>
+                        </div>
+                    </button>
+                </form>
+
+                <!-- Listado de Estudiantes en el Sistema -->
+                <div class="list-card">
+                    <div class="card-header">
+                        <h2>Estudiantes Registrados</h2>
+                        <p class="card-subtitle">Alumnos activos disponibles en el sistema.</p>
+                    </div>
+                    <div id="students-list" class="students-list">
+                        <!-- Se llena dinámicamente -->
+                        <div class="empty-list">No hay estudiantes registrados.</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- PESTAÑA B: EVALUACIÓN NUTRICIONAL -->
+            <section id="tab-evaluacion" class="tab-panel">
+                <!-- Aviso Ético y Legal -->
+                <div class="disclaimer-card" id="disclaimer-card">
+                    <div class="disclaimer-header">
+                        <span class="disclaimer-icon">&#9888;</span>
+                        <span class="disclaimer-title">Aviso Ético y Legal</span>
+                    </div>
+                    <p class="disclaimer-text">
+                        Esta herramienta es un sistema de apoyo a la decisión clínica (CDSS) y
+                        <strong>no reemplaza</strong> el criterio médico profesional. Los resultados deben ser
+                        validados por un profesional de salud calificado. Al continuar, acepta que los datos
+                        se procesan conforme a la Ley 1581 de 2012 (Protección de Datos Personales, Colombia).
+                    </p>
+                    <label class="disclaimer-check">
+                        <input type="checkbox" id="disclaimer-check">
+                        <span class="checkmark"></span>
+                        <span>Acepto el aviso ético y legal</span>
+                    </label>
+                </div>
+
+                <!-- Formulario de Evaluación -->
+                <form id="evaluation-form" class="form-card disabled">
+                    <div class="card-header">
+                        <h2>Nueva Evaluación Clínico-Nutricional</h2>
+                        <p class="card-subtitle">Seleccione un estudiante e ingrese sus mediciones actuales.</p>
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="form-group full-width">
+                            <label for="id_estudiante">Seleccionar Estudiante</label>
+                            <input type="text" id="search-estudiante" class="search-input" placeholder="🔍 Buscar estudiante por nombre...">
+                            <select id="id_estudiante" name="id_estudiante" required>
+                                <option value="" disabled selected>Cargando estudiantes...</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="edad_anios">Edad <span class="unit">años</span></label>
+                            <input type="number" id="edad_anios" name="edad_anios" min="1" max="18" required placeholder="Ej. 10">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="peso_kg">Peso <span class="unit">kg</span></label>
+                            <input type="number" id="peso_kg" name="peso_kg" min="1" max="150" step="0.1" required placeholder="Ej. 35.0">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="estatura_cm">Estatura <span class="unit">cm</span></label>
+                            <input type="number" id="estatura_cm" name="estatura_cm" min="50" max="250" step="0.1" required placeholder="Ej. 140">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="muac_cm">
+                                MUAC <span class="unit">cm</span>
+                                <span class="help-tip" title="Perímetro braquial: mida la circunferencia del brazo izquierdo en el punto medio entre el hombro y el codo.">&#9432;</span>
+                            </label>
+                            <input type="number" id="muac_cm" name="muac_cm" min="5" max="50" step="0.1" required placeholder="Ej. 18.0">
+                        </div>
+
+                        <div class="form-group full-width">
+                            <label for="observaciones">Observaciones Clínicas <span class="unit">(Opcional)</span></label>
+                            <textarea id="observaciones" name="observaciones" rows="3" placeholder="Ej. Se observa cansancio leve en clase o sin alteraciones notables."></textarea>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn-submit" id="btn-evaluation-submit">
+                        <span class="btn-text">Evaluar Estado Nutricional</span>
+                        <div class="btn-loading hidden">
+                            <span class="spinner"></span>
+                            <span>Procesando...</span>
+                        </div>
+                    </button>
+                </form>
+
+                <!-- Panel de Resultados de Evaluación -->
+                <div id="result-container" class="result-card hidden">
+                    <div class="result-header">
+                        <div id="result-badge" class="result-badge">
+                            <span id="result-badge-icon" class="badge-icon"></span>
+                        </div>
+                        <div class="result-header-text">
+                            <h2 id="result-prediccion">—</h2>
+                            <p id="result-descripcion">—</p>
+                        </div>
+                    </div>
+
+                    <div class="result-stats">
+                        <div class="stat">
+                            <span class="stat-value" id="result-imc-value">—</span>
+                            <span class="stat-label">IMC Calculado</span>
+                        </div>
+                    </div>
+
+                    <div class="result-action">
+                        <span class="action-label">Acción Recomendada</span>
+                        <p id="result-accion">—</p>
+                    </div>
+
+                    <div id="result-alert-bar" class="alert-bar"></div>
+                </div>
+
+                <!-- Plan de Seguimiento Detallado -->
+                <div id="follow-up-plan" class="follow-up-card hidden"></div>
+
+                <!-- Botón de Nueva Evaluación -->
+                <div class="new-eval-container hidden" id="new-eval-container">
+                    <button type="button" id="btn-new-eval" class="btn-new-eval">Nueva Evaluación</button>
+                </div>
+            </section>
+        </main>
+
+        <!-- Contenedor General de Notificaciones y Errores -->
         <div id="error-container" class="error-card hidden">
             <span class="error-icon">&#10060;</span>
             <p id="error-message"></p>
         </div>
 
+        <!-- Footer -->
         <footer class="footer">
-            <p>NutriIA v1.0.0 &mdash; Prototipo de Investigación &mdash; PAE Colombia</p>
+            <p>NutriPAE IA v1.1.0 • Prototipo de Apoyo Clínico Inteligente • PAE Colombia</p>
         </footer>
     </div>
+
+    <!-- Contenedor para Notificaciones Flotantes (Toasts) -->
+    <div id="toast-container" style="position: fixed; top: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px;"></div>
 
     <script src="app.js"></script>
 </body>
